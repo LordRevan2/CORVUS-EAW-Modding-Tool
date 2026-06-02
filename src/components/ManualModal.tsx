@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, BookOpen, Download, HelpCircle, ArrowRight, Layers, MapPin, EyeOff, Radio, Settings as SettingsIcon, FileText, Image as ImageIcon } from 'lucide-react';
+import { X, BookOpen, Download, HelpCircle, ArrowRight, Layers, MapPin, EyeOff, Radio, Settings as SettingsIcon, FileText, Image as ImageIcon, Book, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../i18n';
+import packageJson from '../../package.json';
 
 interface ManualModalProps {
   isOpen: boolean;
@@ -21,8 +22,10 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
     {id: 'routes', label: '4. Route Editor', icon: Radio},
     {id: 'translations', label: '5. Translations (.DAT)', icon: FileText},
     {id: 'mtd', label: '6. Sprite Atlas (.MTD)', icon: ImageIcon},
-    {id: 'settings', label: '7. Map Options', icon: SettingsIcon},
-    {id: 'export', label: '8. Save & Export', icon: Download},
+    {id: 'story', label: '7. Story Editor (.XML)', icon: Book},
+    {id: 'settings', label: '8. Map Options', icon: SettingsIcon},
+    {id: 'updates', label: '9. Updates', icon: RefreshCw},
+    {id: 'export', label: '10. Save & Export', icon: Download},
   ] : [
     {id: 'intro', label: '1. Introducción', icon: BookOpen},
     {id: 'import', label: '2. Importar Archivos', icon: Layers},
@@ -30,8 +33,10 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
     {id: 'routes', label: '4. Editor de Rutas', icon: Radio},
     {id: 'translations', label: '5. Traducciones (.DAT)', icon: FileText},
     {id: 'mtd', label: '6. Atlas Texturas (.MTD)', icon: ImageIcon},
-    {id: 'settings', label: '7. Opciones de Mapa', icon: SettingsIcon},
-    {id: 'export', label: '8. Guardar y Exportar', icon: Download},
+    {id: 'story', label: '7. Editor de Historia (.XML)', icon: Book},
+    {id: 'settings', label: '8. Opciones de Mapa', icon: SettingsIcon},
+    {id: 'updates', label: '9. Actualizaciones', icon: RefreshCw},
+    {id: 'export', label: '10. Guardar y Exportar', icon: Download},
   ];
 
   return (
@@ -83,7 +88,7 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
             </div>
 
             <div className="p-2 border-t border-slate-800 bg-slate-900/25 text-center">
-              <span className="text-[8px] text-center text-slate-500 block font-mono">CORVUS v1.0.0</span>
+              <span className="text-[8px] text-center text-slate-500 block font-mono">CORVUS v{packageJson.version}</span>
             </div>
           </div>
 
@@ -349,10 +354,43 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
               </div>
             )}
 
+            {activeTab === 'story' && (
+              <div className="space-y-4 animate-fade-in">
+                <h3 className="text-base font-bold text-cyan-400 uppercase tracking-wider border-b border-cyan-800 pb-2">
+                  {isEn ? "7. Story Editor (.XML)" : "7. Editor de Historia (.XML)"}
+                </h3>
+                <p className="text-xs leading-relaxed text-slate-300">
+                  {isEn
+                    ? "The Story Editor allows you to load, orchestrate, and visualize complex Lua and XML campaign events (Story_Plots). A crucial feature for pacing the strategic conquest."
+                    : "El Editor de Historia permite ver, añadir y orquestar eventos de campaña (Story_Plots) de Lua y XML. Una herramienta esencial para organizar eventos narrativos y misiones en las tablas."
+                  }
+                </p>
+
+                <div className="bg-slate-950/50 border border-slate-800 p-4 rounded-sm text-xs space-y-3">
+                  <div>
+                    <span className="text-[10px] uppercase font-mono text-cyan-400 block font-bold mb-1">
+                      {isEn ? "Sequential Events" : "Eventos Secuenciales"}
+                    </span>
+                    <p className="text-slate-400 leading-relaxed">
+                      {isEn ? "Story files consist of Event chains. You can add new events, define triggers (e.g., STORY_CONSTRUCT), and chain them properly utilizing pre-requisites." : "Los archivos de historia están compuestos por cadenas de eventos. Puedes añadir nuevos eventos, definir detonantes (p.e. STORY_CONSTRUCT) y encadenarlos con pre-requisitos."}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-mono text-cyan-400 block font-bold mb-1">
+                      {isEn ? "Visualization" : "Visualización"}
+                    </span>
+                    <p className="text-slate-400 leading-relaxed">
+                      {isEn ? "Use the intuitive forms to modify conditions, reward units, or zoom into specific plot points." : "Usa los formularios intuitivos para cambiar parámetros, definir recompensas, o inspeccionar nudos de la trama."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {activeTab === 'settings' && (
               <div className="space-y-4 animate-fade-in">
                 <h3 className="text-base font-bold text-cyan-400 uppercase tracking-wider border-b border-cyan-800 pb-2">
-                  {isEn ? "7. General Map Options" : "7. Opciones Generales del Mapa"}
+                  {isEn ? "8. General Map Options" : "8. Opciones Generales del Mapa"}
                 </h3>
                 <p className="text-xs leading-relaxed text-slate-300">
                   {isEn
@@ -389,10 +427,36 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
               </div>
             )}
 
+            {activeTab === 'updates' && (
+              <div className="space-y-4 animate-fade-in">
+                <h3 className="text-base font-bold text-cyan-400 uppercase tracking-wider border-b border-cyan-800 pb-2">
+                  {isEn ? "9. Application Updates" : "9. Actualizaciones"}
+                </h3>
+                <p className="text-xs leading-relaxed text-slate-300">
+                  {isEn
+                    ? "If you are running the unified Desktop version (Electron), you can seamlessly check for new software updates and install them straight from the environment."
+                    : "Si estás utilizando la aplicación de escritorio nativa (Electron), puedes comprobar la disponibilidad de nuevas actualizaciones del software e instalarlas de forma automática."
+                  }
+                </p>
+
+                <div className="bg-slate-950/40 p-3 border border-slate-800 rounded-sm">
+                  <span className="text-[10px] uppercase font-mono text-cyan-400 block font-bold mb-1">
+                    {isEn ? "How to check for updates:" : "Cómo buscar actualizaciones:"}
+                  </span>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    {isEn
+                      ? "In the top-right header, next to the app version indicator, you can click the Refresh icon. Follow the popup dialog to Download and Restart the application with the newest version seamlessly."
+                      : "En la cabecera superior derecha del panel principal, junto al indicador de versión, haz clic en el botón de recarga circular. Un popup te permitirá descargar las novedades y reiniciar."
+                    }
+                  </p>
+                </div>
+              </div>
+            )}
+
             {activeTab === 'export' && (
               <div className="space-y-4 animate-fade-in">
                 <h3 className="text-base font-bold text-cyan-400 uppercase tracking-wider border-b border-cyan-800 pb-2">
-                  {isEn ? "8. Saving & Exporting Changes" : "8. Guardar y Exportar Cambios"}
+                  {isEn ? "10. Saving & Exporting Changes" : "10. Guardar y Exportar Cambios"}
                 </h3>
                 <p className="text-xs leading-relaxed text-slate-300">
                   {isEn
