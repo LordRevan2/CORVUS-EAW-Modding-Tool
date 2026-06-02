@@ -6,7 +6,7 @@
   "main": "main.cjs",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tu-usuario/corvus-eaw-modding-tool.git"
+    "url": "https://github.com/LordRevan2/corvus-eaw-modding-tool.git"
   },
   "build": {
     "appId": "com.eaw.corvus",
@@ -14,7 +14,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "tu-usuario",
+        "owner": "LordRevan2",
         "repo": "corvus-eaw-modding-tool"
       }
     ],
