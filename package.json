@@ -1,7 +1,7 @@
 {
   "name": "corvus-eaw-modding-tool",
   "private": true,
-  "version": "2.0.2",
+  "version": "2.0.3",
   "type": "module",
   "main": "main.cjs",
   "repository": {
@@ -24,6 +24,20 @@
     "win": {
       "target": "nsis",
       "icon": "public/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CORVUS",
+      "installerIcon": "public/icon.ico",
+      "uninstallerIcon": "public/icon.ico",
+      "installerSidebar": "build/installerSidebar.png",
+      "installerHeader": "build/installerHeader.png",
+      "uninstallerSidebar": "build/installerSidebar.png",
+      "uninstallDisplayName": "CORVUS // EAW Modding Tool",
+      "allowElevation": true
     },
     "mac": {
       "icon": "public/icon.png"
