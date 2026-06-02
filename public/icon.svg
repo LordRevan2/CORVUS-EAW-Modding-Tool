@@ -1,0 +1,8 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Rounded square background -->
+  <rect x="0" y="0" width="256" height="256" rx="32" fill="#06b6d4"/>
+  <!-- Rotated square inside -->
+  <g transform="translate(128, 128) rotate(45)">
+    <rect x="-60" y="-60" width="120" height="120" fill="none" stroke="#020617" stroke-width="16" rx="4"/>
+  </g>
+</svg>

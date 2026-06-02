@@ -1,0 +1,6 @@
+{
+  "name": "CORVUS // EAW Modding Tool",
+  "description": "Una herramienta de modding para editar archivos planet.xml de Star Wars: Empire at War con mapa visual.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/* Prism XML Styles for react-simple-code-editor */
+.editor-custom-styles {
+    color: #f97316 !important; /* text-orange-500 default color for values/text */
+}
+.editor-custom-styles .token.comment {
+    color: #22c55e !important; /* text-green-500 */
+    font-style: italic;
+}
+.editor-custom-styles .token.tag {
+    color: #67e8f9; /* cyan-300 */
+}
+.editor-custom-styles .token.tag .token.punctuation {
+    color: #64748b; /* slate-500 for < > </ /> */
+}
+.editor-custom-styles .token.tag .token.namespace {
+    color: #67e8f9;
+}
+.editor-custom-styles .token.tag .token.name,
+.editor-custom-styles .token.name {
+    color: #67e8f9; /* cyan-300 */
+    font-weight: bold;
+}
+.editor-custom-styles .token.attr-name {
+    color: #ef4444; /* red-500 */
+}
+.editor-custom-styles .token.attr-value {
+    color: #fcd34d; /* amber-300 */
+}
+.editor-custom-styles .token.attr-value .token.punctuation {
+    color: #ef4444; /* matching attr-name, or slate-500 */
+}
+.editor-custom-styles .token.punctuation.attr-equals {
+    color: #64748b; /* slate-500 */
+}
+/* Any generic punctuation in markup like = */
+.editor-custom-styles .token.punctuation {
+    color: #64748b; /* slate-500 */
+}
+
+@keyframes shine {
+  0% { transform: translateX(-150%) skewX(-15deg); }
+  60% { transform: translateX(200%) skewX(-15deg); }
+  100% { transform: translateX(200%) skewX(-15deg); }
+}
+
+.animate-shine {
+  animation: shine 3s infinite linear;
+}
