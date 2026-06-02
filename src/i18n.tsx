@@ -241,6 +241,14 @@ export const translations = {
       },
       toastCopied: "Key copied to clipboard",
       toastNewKey: "English text / Localized text"
+    },
+    updater: {
+      checkUpdate: "Check for updates",
+      updateAvailable: "Update Available",
+      updater: "Updater",
+      downloading: "Downloading",
+      downloadBtn: "Download v",
+      restartBtn: "Restart & Install"
     }
   },
   es: {
@@ -482,6 +490,14 @@ export const translations = {
       },
       toastCopied: "Clave copiada al portapapeles",
       toastNewKey: "Texto en español / Localized text"
+    },
+    updater: {
+      checkUpdate: "Buscar actualizaciones",
+      updateAvailable: "Actualización disponible",
+      updater: "Actualizador",
+      downloading: "Descargando",
+      downloadBtn: "Descargar v",
+      restartBtn: "Reiniciar e Instalar"
     }
   }
 };
