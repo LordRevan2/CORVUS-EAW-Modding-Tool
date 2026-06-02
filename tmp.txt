@@ -1,0 +1,1068 @@
+1:import React, { useRef, useState } from 'react';
+2:import packageJson from '../package.json';
+3:import { Upload, Download, Moon, AlertTriangle, Database, XCircle, Route, Globe, BookOpen, FileText, Settings as SettingsIcon, RefreshCw, Folder } from 'lucide-react';
+4:import { Planet, TradeRoute, AppSettings, StoryEvent } from './types';
+5:import { parsePlanetsXml, parseTradeRoutesXml, serializeXml, updatePlanetPositionInDoc, parseStoryXml } from './lib/xml';
+6:import PlanetList from './components/PlanetList';
+7:import GalaxyMap from './components/GalaxyMap';
+8:import PlanetEditor from './components/PlanetEditor';
+9:import BulkEditModal from './components/BulkEditModal';
+10:import TradeRouteList from './components/TradeRouteList';
+11:import TradeRouteEditor from './components/TradeRouteEditor';
+12:import SettingsModal from './components/SettingsModal';
+13:import ManualModal from './components/ManualModal';
+14:import DatEditor from './components/DatEditor';
+15:import MtdEditor from './components/MtdEditor';
+16:import StoryEditor from './components/StoryEditor';
+17:import UpdaterUI from './components/UpdaterUI';
+18:import { parseDatFile, DatRecord } from './lib/dat';
+19:import { parseMtd, MtdIcon } from './lib/mtd';
+20:import { I18nProvider, useTranslation, useLanguage } from './i18n';
+21:
+22:function AppContent({ settings, setSettings }: { settings: AppSettings, setSettings: (s: AppSettings) => void }) {
+23:  const t = useTranslation();
+24:  const [xmlDoc, setXmlDoc] = useState<XMLDocument | null>(null);
+25:  const [planets, setPlanets] = useState<Planet[]>([]);
+26:  const [tradeRoutesXmlDoc, setTradeRoutesXmlDoc] = useState<XMLDocument | null>(null);
+27:  const [tradeRoutes, setTradeRoutes] = useState<TradeRoute[]>([]);
+28:  const [selectedPlanet, setSelectedPlanet] = useState<Planet | null>(null);
+29:  const [selectedRoute, setSelectedRoute] = useState<TradeRoute | null>(null);
+30:  const [activeTab, setActiveTab] = useState<'planets' | 'routes'>('planets');
+31:  const [error, setError] = useState<string | null>(null);
+32:
+33:  const [showCore, setShowCore] = useState(false);
+34:  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+35:  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+36:  const [isManualOpen, setIsManualOpen] = useState(false);
+37:
+38:  const [datRecords, setDatRecords] = useState<DatRecord[] | null>(null);
+39:  const [datFormat, setDatFormat] = useState<'indexed' | 'sequential_mult2' | 'sequential_mult1'>('indexed');
+40:  const [datFileName, setDatFileName] = useState<string>('MasterTextFile.dat');
+41:
+42:  const [mtdIcons, setMtdIcons] = useState<MtdIcon[] | null>(null);
+43:  const [mtdFileName, setMtdFileName] = useState<string>('Mt_commandbar.mtd');
+44:  const [mtdInitialTexture, setMtdInitialTexture] = useState<File | null>(null);
+45:
+46:  const [storyDoc, setStoryDoc] = useState<XMLDocument | null>(null);
+47:  const [storyEvents, setStoryEvents] = useState<StoryEvent[] | null>(null);
+48:  const [storyFileName, setStoryFileName] = useState<string>('Story.xml');
+49:
+50:  const [workspaceFiles, setWorkspaceFiles] = useState<File[]>([]);
+51:  const [selectedDatPath, setSelectedDatPath] = useState<string>('');
+52:  const [selectedMtdPath, setSelectedMtdPath] = useState<string>('');
+53:  const [selectedStoryPath, setSelectedStoryPath] = useState<string>('');
+54:
+55:  const fileInputRef = useRef<HTMLInputElement>(null);
+56:  const trFileInputRef = useRef<HTMLInputElement>(null);
+57:  const datFileInputRef = useRef<HTMLInputElement>(null);
+58:  const mtdFileInputRef = useRef<HTMLInputElement>(null);
+59:  const storyFileInputRef = useRef<HTMLInputElement>(null);
+60:  const folderInputRef = useRef<HTMLInputElement>(null);
+61:  
+62:  const lang = useLanguage();
+63:
+64:  const displayPlanets = planets.filter(p => showCore || p.name.toLowerCase() !== 'galaxy_core_art_model');
+65:
+66:  const handleFolderUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+67:    const files = Array.from(e.target.files || []);
+68:    if (files.length === 0) return;
+69:    
+70:    setWorkspaceFiles(files);
+71:    setSelectedDatPath('');
+72:    setSelectedMtdPath('');
+73:    setSelectedStoryPath('');
+74:    setError(null);
+75:    
+76:    if (folderInputRef.current) folderInputRef.current.value = '';
+77:  };
+78:
+79:  const readFileAsText = (file: File) => {
+80:        return new Promise<string>((resolve, reject) => {
+81:            const reader = new FileReader();
+82:            reader.onload = (event) => resolve(event.target?.result as string);
+83:            reader.onerror = (err) => reject(err);
+84:            reader.readAsText(file);
+85:        });
+86:    };
+87:
+88:    const readFileAsArrayBuffer = (file: File) => {
+89:        return new Promise<ArrayBuffer>((resolve, reject) => {
+90:            const reader = new FileReader();
+91:            reader.onload = (event) => resolve(event.target?.result as ArrayBuffer);
+92:            reader.onerror = (err) => reject(err);
+93:            reader.readAsArrayBuffer(file);
+94:        });
+95:    };
+96:
+97:    const editGalaxyFromWorkspace = async () => {
+98:    let planetsFile = workspaceFiles.find(f => f.name.toLowerCase() === 'planets.xml' || f.name.toLowerCase() === 'planet.xml');
+99:    let routesFile = workspaceFiles.find(f => f.name.toLowerCase() === 'traderoutes.xml');
+100:    
+101:    try {
+102:        if (planetsFile) {
+103:            const content = await readFileAsText(planetsFile);
+104:            const parsed = parsePlanetsXml(content);
+105:            setXmlDoc(parsed.doc);
+106:            setPlanets(parsed.planets);
+107:            setSelectedPlanet(null);
+108:        }
+109:        if (routesFile) {
+110:            const content = await readFileAsText(routesFile);
+111:            const parsed = parseTradeRoutesXml(content);
+112:            setTradeRoutesXmlDoc(parsed.doc);
+113:            setTradeRoutes(parsed.tradeRoutes);
+114:        }
+115:        if (!planetsFile && !routesFile) {
+116:           setError(lang === 'es' ? 'No se encontraron archivos XML de galaxia (Planets.xml o TradeRoutes.xml) en el workspace.' : 'No galaxy XML files (Planets.xml or TradeRoutes.xml) found in workspace.');
+117:        }
+118:    } catch (err: any) {
+119:        setError(err.message || 'Error parsing Galaxy XMLs');
+120:    }
+121:  };
+122:
+123:  const loadDatFromWorkspace = async (path: string) => {
+124:    const datFile = workspaceFiles.find(f => f.webkitRelativePath === path || f.name === path);
+125:    if (!datFile) return;
+126:    try {
+127:        const buffer = await readFileAsArrayBuffer(datFile);
+128:        const parsed = parseDatFile(buffer);
+129:        setDatRecords(parsed.records);
+130:        setDatFormat(parsed.format);
+131:        setDatFileName(datFile.name);
+132:    } catch (err: any) {
+133:        setError(err.message || 'Error parsing .DAT file');
+134:    }
+135:  };
+136:
+137:  const loadMtdFromWorkspace = async (path: string) => {
+138:    const mtdFile = workspaceFiles.find(f => f.webkitRelativePath === path || f.name === path);
+139:    if (!mtdFile) return;
+140:    try {
+141:        const buffer = await readFileAsArrayBuffer(mtdFile);
+142:        const parsed = parseMtd(buffer);
+143:        setMtdIcons(parsed);
+144:        setMtdFileName(mtdFile.name);
+145:        
+146:        const baseName = mtdFile.name.replace(/\.[^/.]+$/, "").toLowerCase();
+147:        let mtdTexture = workspaceFiles.find(f => {
+148:            const fname = f.name.toLowerCase();
+149:            return fname === `${baseName}.tga` || fname === `${baseName}.png` || fname === `${baseName}.jpg`;
+150:        });
+151:        setMtdInitialTexture(mtdTexture || null);
+152:    } catch (err: any) {
+153:        setError(err.message || 'Error parsing .MTD file');
+154:    }
+155:  };
+156:
+157:  const loadStoryFromWorkspace = async (path: string) => {
+158:    const storyFile = workspaceFiles.find(f => f.webkitRelativePath === path || f.name === path);
+159:    if (!storyFile) return;
+160:    try {
+161:        const content = await readFileAsText(storyFile);
+162:        const parsed = parseStoryXml(content);
+163:        setStoryDoc(parsed.doc);
+164:        setStoryEvents(parsed.storyEvents);
+165:        setStoryFileName(storyFile.name);
+166:    } catch (err: any) {
+167:        setError(err.message || 'Error parsing Story XML');
+168:    }
+169:  };
+170:
+171:  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+172:    const file = e.target.files?.[0];
+173:    if (!file) return;
+174:
+175:    const fileName = file.name.toLowerCase();
+176:    if (fileName !== 'planets.xml' && fileName !== 'planet.xml') {
+177:      setError(t.errors.invalidPlanetSet);
+178:      if (fileInputRef.current) fileInputRef.current.value = '';
+179:      return;
+180:    }
+181:
+182:    setError(null);
+183:    const reader = new FileReader();
+184:    reader.onload = (event) => {
+185:      try {
+186:        const content = event.target?.result as string;
+187:        const parsed = parsePlanetsXml(content);
+188:        setXmlDoc(parsed.doc);
+189:        setPlanets(parsed.planets);
+190:        setSelectedPlanet(null);
+191:      } catch (err: any) {
+192:        setError(err.message || t.errors.importXml);
+193:      }
+194:    };
+195:    reader.onerror = () => setError(t.errors.readXml);
+196:    reader.readAsText(file);
+197:    
+198:    // Clear input so same file can be re-selected
+199:    if (fileInputRef.current) fileInputRef.current.value = '';
+200:  };
+201:
+202:  const handleTradeRoutesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+203:    const file = e.target.files?.[0];
+204:    if (!file) return;
+205:
+206:    const fileName = file.name.toLowerCase();
+207:    if (fileName !== 'traderoutes.xml') {
+208:      setError('File must be named TradeRoutes.xml');
+209:      if (trFileInputRef.current) trFileInputRef.current.value = '';
+210:      return;
+211:    }
+212:
+213:    setError(null);
+214:    const reader = new FileReader();
+215:    reader.onload = (event) => {
+216:      try {
+217:        const content = event.target?.result as string;
+218:        const parsed = parseTradeRoutesXml(content);
+219:        setTradeRoutesXmlDoc(parsed.doc);
+220:        setTradeRoutes(parsed.tradeRoutes);
+221:      } catch (err: any) {
+222:        setError(err.message || 'Error processing TradeRoutes XML');
+223:      }
+224:    };
+225:    reader.onerror = () => setError('Error reading the file');
+226:    reader.readAsText(file);
+227:    
+228:    if (trFileInputRef.current) trFileInputRef.current.value = '';
+229:  };
+230:
+231:  const handleCloseProject = () => {
+232:    setXmlDoc(null);
+233:    setPlanets([]);
+234:    setSelectedPlanet(null);
+235:    setTradeRoutesXmlDoc(null);
+236:    setTradeRoutes([]);
+237:    setError(null);
+238:  };
+239:
+240:
+241:  const handleExportAll = () => {
+242:    if (xmlDoc) {
+243:      const xmlString = serializeXml(xmlDoc);
+244:      const blob = new Blob([xmlString], { type: 'application/xml' });
+245:      const url = URL.createObjectURL(blob);
+246:      const a = document.createElement('a');
+247:      a.href = url;
+248:      a.download = 'Planets_Modified.xml';
+249:      a.click();
+250:      URL.revokeObjectURL(url);
+251:    }
+252:    
+253:    if (tradeRoutesXmlDoc) {
+254:      const trXmlString = serializeXml(tradeRoutesXmlDoc);
+255:      const blob = new Blob([trXmlString], { type: 'application/xml' });
+256:      const url = URL.createObjectURL(blob);
+257:      const a = document.createElement('a');
+258:      a.href = url;
+259:      a.download = 'TradeRoutes_Modified.xml';
+260:      a.click();
+261:      URL.revokeObjectURL(url);
+262:    }
+263:  };
+264:
+265:  const handleCreateNew = () => {
+266:    setError(null);
+267:    try {
+268:      const emptyXml = `<?xml version="1.0" encoding="utf-8"?>\n<Planets>\n</Planets>`;
+269:      const parsed = parsePlanetsXml(emptyXml);
+270:      setXmlDoc(parsed.doc);
+271:      setPlanets(parsed.planets);
+272:      setSelectedPlanet(null);
+273:    } catch (err: any) {
+274:      setError(err.message || t.errors.initDb);
+275:    }
+276:  };
+277:
+278:  const handleDatFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+279:    const file = e.target.files?.[0];
+280:    if (!file) return;
+281:
+282:    setError(null);
+283:    const reader = new FileReader();
+284:    reader.onload = (event) => {
+285:      try {
+286:        const buffer = event.target?.result as ArrayBuffer;
+287:        const parsed = parseDatFile(buffer);
+288:        setDatRecords(parsed.records);
+289:        setDatFormat(parsed.format);
+290:        setDatFileName(file.name);
+291:      } catch (err: any) {
+292:        setError(err.message || t.errors.importDat);
+293:      }
+294:    };
+295:    reader.onerror = () => setError(t.errors.readDat);
+296:    reader.readAsArrayBuffer(file);
+297:
+298:    if (datFileInputRef.current) datFileInputRef.current.value = '';
+299:  };
+300:
+301:  const handleCreateNewDat = () => {
+302:    setError(null);
+303:    setDatFileName('MasterTextFile.dat');
+304:    setDatFormat('indexed');
+305:    setDatRecords([
+306:      {
+307:        id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
+308:        key: 'TEXT_PLANET_CORUSCANT_NAME',
+309:        value: 'Coruscant'
+310:      },
+311:      {
+312:        id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
+313:        key: 'TEXT_UNIT_X_WING_NAME',
+314:        value: 'Caza Ala-X'
+315:      }
+316:    ]);
+317:  };
+318:
+319:  const handleMtdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+320:    const files = Array.from(e.target.files || []) as File[];
+321:    if (files.length === 0) return;
+322:
+323:    setError(null);
+324:    
+325:    let mtdFile = files.find(f => f.name.toLowerCase().endsWith('.mtd'));
+326:    let textureFile = files.find(f => f.name.toLowerCase().endsWith('.tga') || f.name.toLowerCase().endsWith('.png') || f.name.toLowerCase().endsWith('.jpg'));
+327:
+328:    if (!mtdFile && files.length > 0 && !textureFile) {
+329:      mtdFile = files[0];
+330:    }
+331:    
+332:    if (mtdFile) {
+333:      const reader = new FileReader();
+334:      reader.onload = (event) => {
+335:        try {
+336:          const buffer = event.target?.result as ArrayBuffer;
+337:          const parsed = parseMtd(buffer);
+338:          setMtdIcons(parsed);
+339:          setMtdFileName(mtdFile.name);
+340:          setMtdInitialTexture(textureFile || null);
+341:        } catch (err: any) {
+342:          setError(err.message || 'Error processing MTD file.');
+343:        }
+344:      };
+345:      reader.onerror = () => setError('Error reading MTD file');
+346:      reader.readAsArrayBuffer(mtdFile);
+347:    }
+348:
+349:    if (mtdFileInputRef.current) mtdFileInputRef.current.value = '';
+350:  };
+351:
+352:  const handleStoryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+353:    const file = e.target.files?.[0];
+354:    if (!file) return;
+355:
+356:    setError(null);
+357:    const reader = new FileReader();
+358:    reader.onload = (event) => {
+359:      try {
+360:        const content = event.target?.result as string;
+361:        const parsed = parseStoryXml(content);
+362:        setStoryDoc(parsed.doc);
+363:        setStoryEvents(parsed.storyEvents);
+364:        setStoryFileName(file.name);
+365:      } catch (err: any) {
+366:        setError(err.message || 'Error processing Story XML.');
+367:      }
+368:    };
+369:    reader.onerror = () => setError('Error reading Story XML');
+370:    reader.readAsText(file);
+371:    
+372:    if (storyFileInputRef.current) storyFileInputRef.current.value = '';
+373:  };
+374:
+375:  const handleCreateNewStory = () => {
+376:    setError(null);
+377:    try {
+378:      const emptyXml = `<?xml version="1.0" encoding="utf-8"?>\n<Story>\n</Story>`;
+379:      const parsed = parseStoryXml(emptyXml);
+380:      setStoryDoc(parsed.doc);
+381:      setStoryEvents(parsed.storyEvents);
+382:      setStoryFileName('Story.xml');
+383:    } catch (err: any) {
+384:      setError(err.message || 'Error creating Story XML');
+385:    }
+386:  };
+387:
+388:  const handleAddPlanet = () => {
+389:    if (!xmlDoc) return;
+390:    
+391:    const newPlanetNode = xmlDoc.createElement("Planet");
+392:    newPlanetNode.setAttribute("Name", `New_Planet_${planets.length + 1}`);
+393:    
+394:    const posNode = xmlDoc.createElement("Galactic_Position");
+395:    posNode.textContent = "0.0, 0.0, 0.0";
+396:    newPlanetNode.appendChild(posNode);
+397:    
+398:    let root = xmlDoc.querySelector("Planets") || xmlDoc.documentElement;
+399:    root.appendChild(newPlanetNode);
+400:    
+401:    const newPlanet: Planet = {
+402:      id: `p_new_${Date.now()}`,
+403:      el: newPlanetNode,
+404:      name: newPlanetNode.getAttribute("Name") || "Unknown",
+405:      x: 0,
+406:      y: 0,
+407:      z: 0
+408:    };
+409:    
+410:    setPlanets([...planets, newPlanet]);
+411:    setSelectedPlanet(newPlanet);
+412:  };
+413:
+414:  const handleUpdatePlanet = (updatedPlanet: Planet, nodeUpdates?: { tagName: string, value: string }[]) => {
+415:    // 1. Update React state
+416:    setPlanets(prev => prev.map(p => p.id === updatedPlanet.id ? updatedPlanet : p));
+417:    if (selectedPlanet?.id === updatedPlanet.id) {
+418:      setSelectedPlanet(updatedPlanet);
+419:    }
+420:
+421:    // 2. Update XML DOM Node
+422:    updatePlanetPositionInDoc(updatedPlanet);
+423:
+424:    // 3. Update any dynamic nodes
+425:    if (nodeUpdates && nodeUpdates.length > 0) {
+426:      nodeUpdates.forEach(update => {
+427:        const childNode = Array.from(updatedPlanet.el.children).find(c => c.tagName === update.tagName);
+428:        if (childNode) {
+429:          childNode.textContent = update.value;
+430:        }
+431:      });
+432:    }
+433:  };
+434:
+435:  const handleDeletePlanet = (id: string) => {
+436:    const planetToDelete = planets.find(p => p.id === id);
+437:    if (planetToDelete && planetToDelete.el && planetToDelete.el.parentNode) {
+438:      planetToDelete.el.parentNode.removeChild(planetToDelete.el);
+439:    }
+440:    setPlanets(prev => prev.filter(p => p.id !== id));
+441:    if (selectedPlanet?.id === id) {
+442:      setSelectedPlanet(null);
+443:    }
+444:  };
+445:
+446:  const handleAddTradeRoute = () => {
+447:    if (!tradeRoutesXmlDoc) return;
+448:    
+449:    const newRouteNode = tradeRoutesXmlDoc.createElement("TradeRoute");
+450:    newRouteNode.setAttribute("Name", `New_Trade_Route_${tradeRoutes.length + 1}`);
+451:    
+452:    const posA = tradeRoutesXmlDoc.createElement("Point_A");
+453:    posA.textContent = "Planet1";
+454:    newRouteNode.appendChild(posA);
+455:
+456:    const posB = tradeRoutesXmlDoc.createElement("Point_B");
+457:    posB.textContent = "Planet2";
+458:    newRouteNode.appendChild(posB);
+459:    
+460:    let root = tradeRoutesXmlDoc.querySelector("TradeRoutes") || tradeRoutesXmlDoc.documentElement;
+461:    root.appendChild(newRouteNode);
+462:    
+463:    const newRoute: TradeRoute = {
+464:      id: `tr_new_${Date.now()}`,
+465:      el: newRouteNode,
+466:      name: newRouteNode.getAttribute("Name") || "Unknown",
+467:      pointA: "Planet1",
+468:      pointB: "Planet2"
+469:    };
+470:    
+471:    setTradeRoutes([...tradeRoutes, newRoute]);
+472:    setSelectedRoute(newRoute);
+473:    setSelectedPlanet(null);
+474:    setActiveTab('routes');
+475:  };
+476:
+477:  const handleUpdateTradeRoute = (updatedRoute: TradeRoute, nodeUpdates?: { tagName: string, value: string }[]) => {
+478:    setTradeRoutes(prev => prev.map(r => r.id === updatedRoute.id ? updatedRoute : r));
+479:    if (selectedRoute?.id === updatedRoute.id) {
+480:      setSelectedRoute(updatedRoute);
+481:    }
+482:
+483:    if (nodeUpdates && nodeUpdates.length > 0) {
+484:      nodeUpdates.forEach(update => {
+485:        let childNode = Array.from(updatedRoute.el.children).find(c => c.tagName === update.tagName);
+486:        if (childNode) {
+487:          childNode.textContent = update.value;
+488:        } else {
+489:          childNode = tradeRoutesXmlDoc!.createElement(update.tagName);
+490:          childNode.textContent = update.value;
+491:          updatedRoute.el.appendChild(childNode);
+492:        }
+493:      });
+494:    }
+495:  };
+496:
+497:  const handleDeleteTradeRoute = (id: string) => {
+498:    const routeToDelete = tradeRoutes.find(r => r.id === id);
+499:    if (routeToDelete && routeToDelete.el && routeToDelete.el.parentNode) {
+500:      routeToDelete.el.parentNode.removeChild(routeToDelete.el);
+501:    }
+502:    setTradeRoutes(prev => prev.filter(r => r.id !== id));
+503:    if (selectedRoute?.id === id) {
+504:      setSelectedRoute(null);
+505:    }
+506:  };
+507:
+508:  const handleBulkUpdate = (tagName: string, value: string, excludedIds: Set<string>) => {
+509:    if (!xmlDoc) return;
+510:
+511:    const updatedPlanets = planets.map(p => {
+512:      if (excludedIds.has(p.id)) return p;
+513:
+514:      // Update XML node
+515:      let childNode = Array.from(p.el.children).find(c => (c as any).tagName === tagName) as any;
+516:      if (!childNode) {
+517:        childNode = xmlDoc.createElement(tagName);
+518:        p.el.appendChild(childNode);
+519:      }
+520:      childNode.textContent = value;
+521:
+522:      // Create a fresh clone so React detects the update and re-renders components dependent on it
+523:      return { ...p };
+524:    });
+525:
+526:    setPlanets(updatedPlanets);
+527:    if (selectedPlanet) {
+528:      const refreshed = updatedPlanets.find(p => p.id === selectedPlanet.id);
+529:      setSelectedPlanet(refreshed || null);
+530:    }
+531:  };
+532:
+533:  return (
+534:    <div className="flex flex-col h-screen bg-slate-950 text-cyan-50 overflow-hidden font-sans select-none">
+535:      {/* Top Navbar */}
+536:      <header className="h-14 border-b border-cyan-800/50 bg-slate-900/80 flex items-center justify-between px-6 shrink-0 backdrop-blur-md z-10">
+537:        <div className="flex items-center gap-4">
+538:          <div className="w-8 h-8 bg-cyan-500 rounded-sm flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.5)]">
+539:            <div className="w-5 h-5 border-2 border-slate-950 rotate-45"></div>
+540:          </div>
+541:          <div className="flex items-center gap-3">
+542:            <h1 className="text-lg font-bold tracking-widest uppercase italic">CORVUS <span className="font-extralight opacity-60">// EAW Modding Tool</span></h1>
+543:            
+544:            <div className="flex items-center gap-1 my-auto">
+545:              <div className="relative overflow-hidden px-2 py-0.5 border border-amber-500/40 bg-amber-500/10 rounded flex items-center group cursor-default">
+546:                <span className="text-[10px] font-mono font-bold tracking-widest text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)] z-10">
+547:                  v{packageJson.version}
+548:                </span>
+549:                <div className="absolute inset-0 w-8 h-full bg-white/30 skew-x-[-15deg] blur-[2px] animate-shine z-0 pointer-events-none"></div>
+550:              </div>
+551:              <button 
+552:                onClick={() => {
+553:                  if (typeof window !== 'undefined' && window.require) {
+554:                    try {
+555:                      const { ipcRenderer } = window.require('electron');
+556:                      ipcRenderer.send('check-for-updates');
+557:                    } catch (e) {
+558:                      console.warn('Update check not available');
+559:                    }
+560:                  }
+561:                }}
+562:                className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-cyan-400 transition-colors"
+563:                title={t.updater?.checkUpdate || "Check for updates"}
+564:              >
+565:                <RefreshCw className="w-3.5 h-3.5" />
+566:              </button>
+567:            </div>
+568:          </div>
+569:        </div>
+570:
+571:        <div className="flex items-center gap-4">
+572:          <input
+573:            type="file"
+574:            accept=".xml"
+575:            className="hidden"
+576:            ref={fileInputRef}
+577:            onChange={handleFileUpload}
+578:          />
+579:          <input
+580:            type="file"
+581:            accept=".xml"
+582:            className="hidden"
+583:            ref={trFileInputRef}
+584:            onChange={handleTradeRoutesUpload}
+585:          />
+586:          <input
+587:            type="file"
+588:            accept=".dat"
+589:            className="hidden"
+590:            ref={datFileInputRef}
+591:            onChange={handleDatFileUpload}
+592:          />
+593:          
+594:          <button 
+595:            onClick={() => setIsSettingsOpen(true)}
+596:            className="w-8 h-8 flex items-center justify-center border border-slate-700/50 hover:border-cyan-500/50 hover:bg-cyan-500/15 text-slate-300 hover:text-cyan-400 transition-all duration-200 group rounded"
+597:            title={t.settings}
+598:            id="settings_toggle_btn"
+599:          >
+600:            <SettingsIcon className="w-4 h-4 transition-transform duration-300 group-hover:rotate-45" />
+601:          </button>
+602:        </div>
+603:      </header>
+604:
+605:      {/* Main Content */}
+606:      <main className="flex-1 flex overflow-hidden">
+607:        {storyDoc && storyEvents ? (
+608:          <StoryEditor
+609:            initialDoc={storyDoc}
+610:            initialEvents={storyEvents}
+611:            fileName={storyFileName}
+612:            onClose={() => { setStoryDoc(null); setStoryEvents(null); }}
+613:            onError={setError}
+614:            settings={settings}
+615:            onUpdateDoc={(doc, events) => { setStoryDoc(doc); setStoryEvents(events); }}
+616:          />
+617:        ) : mtdIcons ? (
+618:          <MtdEditor
+619:            initialIcons={mtdIcons}
+620:            fileName={mtdFileName}
+621:            initialTextureFile={mtdInitialTexture}
+622:            onClose={() => setMtdIcons(null)}
+623:            onError={setError}
+624:          />
+625:        ) : datRecords ? (
+626:          <DatEditor 
+627:            initialRecords={datRecords}
+628:            fileName={datFileName}
+629:            format={datFormat}
+630:            onClose={() => setDatRecords(null)}
+631:          />
+632:        ) : xmlDoc ? (
+633:          <div className="flex-1 flex flex-col min-w-0">
+634:             <div className="h-12 border-b border-cyan-900/50 bg-slate-900/80 flex flex-col md:flex-row items-center justify-between px-4 shrink-0 shadow-md">
+635:                <div className="flex items-center space-x-3 mb-2 md:mb-0">
+636:                  <div className="w-6 h-6 bg-cyan-500/20 border border-cyan-500/50 rounded flex items-center justify-center">
+637:                    <Globe className="w-3.5 h-3.5 text-cyan-400" />
+638:                  </div>
+639:                  <div>
+640:                    <div className="flex items-center space-x-2">
+641:                       <span className="text-xs uppercase tracking-widest text-slate-400 font-semibold font-mono">{t.home.xmlMapTitle}</span>
+642:                    </div>
+643:                  </div>
+644:                </div>
+645:
+646:                <div className="flex items-center space-x-3 text-xs w-full md:w-auto overflow-x-auto justify-end">
+647:                   <button 
+648:                      onClick={() => setIsBulkEditOpen(true)}
+649:                      className="px-3 py-1.5 border border-purple-500/50 hover:bg-purple-500/20 text-purple-400 text-[10px] tracking-widest uppercase transition-all flex items-center space-x-1.5"
+650:                   >
+651:                     <Database className="w-3.5 h-3.5" />
+652:                     <span className="hidden sm:inline">{t.planetList.bulkEdit}</span>
+653:                   </button>
+654:                   
+655:                   <button 
+656:                      onClick={() => trFileInputRef.current?.click()}
+657:                      className="px-3 py-1.5 border border-amber-500/50 hover:bg-amber-500/20 text-amber-500 text-[10px] tracking-widest uppercase transition-all flex items-center space-x-1.5"
+658:                    >
+659:                      <Upload className="w-3.5 h-3.5" />
+660:                      <span className="hidden sm:inline">{t.importRoutes}</span>
+661:                   </button>
+662:
+663:                   <button 
+664:                      onClick={handleExportAll}
+665:                      className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 text-[11px] font-bold tracking-widest uppercase transition-all flex items-center space-x-1.5"
+666:                   >
+667:                     <Download className="w-3.5 h-3.5" />
+668:                     <span className="whitespace-nowrap">{t.exportChanges}</span>
+669:                   </button>
+670:                   
+671:                   <button 
+672:                      onClick={handleCloseProject}
+673:                      className="p-1 px-2 border border-slate-700/60 hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400 text-slate-400 text-[10px] uppercase font-bold tracking-wider transition-all flex items-center space-x-1 whitespace-nowrap"
+674:                   >
+675:                     <XCircle className="w-3 h-3" />
+676:                     <span className="hidden sm:inline">{t.closeProject}</span>
+677:                   </button>
+678:                </div>
+679:             </div>
+680:
+681:             <div className="flex-1 flex overflow-hidden">
+682:               <div className="h-full flex flex-col shrink-0">
+683:                  <div className="flex shrink-0">
+684:                    <button
+685:                       onClick={() => setActiveTab('planets')}
+686:                       className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[10px] uppercase font-bold tracking-widest transition-colors ${
+687:                          activeTab === 'planets' ? 'bg-cyan-900 border-b-2 border-cyan-400 text-cyan-200' : 'bg-slate-900 border-b-2 border-slate-800 text-slate-500'
+688:                       }`}
+689:                    >
+690:                       <Globe className="w-3 h-3" /> {t.planetsTab}
+691:                    </button>
+692:                     <button
+693:                       onClick={() => setActiveTab('routes')}
+694:                       className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[10px] uppercase font-bold tracking-widest transition-colors ${
+695:                          activeTab === 'routes' ? 'bg-amber-900 border-b-2 border-amber-400 text-amber-200' : 'bg-slate-900 border-b-2 border-slate-800 text-slate-500'
+696:                       }`}
+697:                    >
+698:                       <Route className="w-3 h-3" /> {t.routesTab}
+699:                    </button>
+700:                  </div>
+701:
+702:                  {activeTab === 'planets' ? (
+703:                    <PlanetList 
+704:                      planets={displayPlanets} 
+705:                      selectedPlanet={selectedPlanet} 
+706:                      onSelectPlanet={(p) => { setSelectedPlanet(p); setSelectedRoute(null); }} 
+707:                      onAddPlanet={handleAddPlanet}
+708:                      totalPlanetsCount={planets.length}
+709:                      showCore={showCore}
+710:                      onToggleShowCore={() => setShowCore(!showCore)}
+711:                    />
+712:                  ) : (
+713:                    <TradeRouteList
+714:                      tradeRoutes={tradeRoutes}
+715:                      selectedRoute={selectedRoute}
+716:                      onSelectRoute={(r) => { setSelectedRoute(r); setSelectedPlanet(null); }}
+717:                      onAddRoute={handleAddTradeRoute}
+718:                      onDeleteRoute={handleDeleteTradeRoute}
+719:                    />
+720:                  )}
+721:               </div>
+722:
+723:               <GalaxyMap
+724:                 planets={displayPlanets}
+725:                 tradeRoutes={tradeRoutes}
+726:                 settings={settings}
+727:                 selectedPlanet={selectedPlanet}
+728:                 onSelectPlanet={(p) => { setSelectedPlanet(p); setSelectedRoute(null); setActiveTab('planets'); }}
+729:                 onUpdatePlanet={handleUpdatePlanet}
+730:               />
+731:
+732:               {selectedPlanet || (!selectedRoute && activeTab === 'planets') ? (
+733:                 <PlanetEditor 
+734:                   planet={selectedPlanet} 
+735:                   onUpdate={handleUpdatePlanet}
+736:                   onDelete={() => selectedPlanet && handleDeletePlanet(selectedPlanet.id)}
+737:                 />
+738:               ) : null}
+739:
+740:               {selectedRoute || (!selectedPlanet && activeTab === 'routes') ? (
+741:                 <TradeRouteEditor 
+742:                   route={selectedRoute} 
+743:                   onUpdate={handleUpdateTradeRoute}
+744:                   onDelete={() => selectedRoute && handleDeleteTradeRoute(selectedRoute.id)}
+745:                 />
+746:               ) : null}
+747:             </div>
+748:          </div>
+749:        ) : (
+750:          <div className="flex-1 flex flex-col items-center justify-center text-center px-4 relative overflow-y-auto">
+751:            <div className="absolute inset-0 opacity-20 pointer-events-none" 
+752:                 style={{ backgroundImage: 'radial-gradient(#22d3ee 0.5px, transparent 0.5px)', backgroundSize: '30px 30px' }}></div>
+753:            
+754:            <div className="max-w-4xl w-full flex flex-col items-center justify-center relative z-10 py-8">
+755:              <div className="mb-8 max-w-xl text-center">
+756:                <div className="w-10 h-10 bg-cyan-500/10 border border-cyan-500/40 rounded-sm flex items-center justify-center mx-auto mb-4 rotate-45">
+757:                  <div className="w-5 h-5 border-2 border-cyan-400"></div>
+758:                </div>
+759:                <h2 className="text-xl font-bold text-cyan-200 mb-2 uppercase tracking-widest italic">{t.home.title}</h2>
+760:                <p className="text-xs text-slate-400 tracking-wider font-mono">
+761:                  {t.home.subtitle}
+762:                </p>
+763:              </div>
+764:              
+765:              {error && (
+766:                <div className="mb-6 p-4 bg-slate-900/90 border-2 border-red-500/30 text-red-400 font-mono text-xs text-left rounded-md max-w-2xl w-full flex flex-col space-y-2 shadow-[0_0_20px_rgba(239,68,68,0.1)] select-text overflow-hidden shrink-0">
+767:                  <div className="flex items-center space-x-2 border-b border-red-500/20 pb-2 mb-1">
+768:                    <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 select-none animate-pulse" />
+769:                    <span className="font-bold uppercase tracking-wider text-[10px] text-red-400 select-none">{t.home.errorLog}</span>
+770:                  </div>
+771:                  <pre className="whitespace-pre-wrap overflow-x-auto leading-relaxed select-text font-mono max-h-96 pr-1 custom-scrollbar">{error}</pre>
+772:                </div>
+773:              )}
+774:
+775:              {/* Mod Workspace Banner */}
+776:              <div className="w-full bg-slate-900/40 p-5 border border-emerald-800/50 rounded flex flex-col md:flex-row items-center justify-between text-left mb-6 hover:border-emerald-500/50 transition-colors shadow-[0_0_20px_rgba(16,185,129,0.02)]">
+777:                <div className="mb-4 md:mb-0">
+778:                  <h3 className="text-sm font-bold text-emerald-400 tracking-widest uppercase font-mono flex items-center space-x-2">
+779:                    <Folder className="w-5 h-5" />
+780:                    <span>Workspace</span>
+781:                  </h3>
+782:                  {workspaceFiles.length > 0 ? (
+783:                    <p className="text-xs text-slate-300 mt-2 font-mono flex items-center bg-slate-950 px-3 py-1.5 rounded-sm border border-emerald-900/40 inline-flex">
+784:                      <span className="text-emerald-500 mr-2">{t.home.workspaceLoaded}</span>
+785:                      {workspaceFiles.length} files loaded
+786:                    </p>
+787:                  ) : (
+788:                    <p className="text-xs text-slate-400 mt-1 max-w-xl leading-relaxed">
+789:                      {lang === 'es' 
+790:                         ? "Carga una carpeta completa 'Data' o un directorio de Mod. Corvus identificará los archivos soportados automáticamente para cargarlos bajo demanda." 
+791:                         : "Load a full 'Data' folder or Mod directory. Corvus will automatically identify supported files and load them on demand."}
+792:                    </p>
+793:                  )}
+794:                </div>
+795:                {!workspaceFiles.length && (
+796:                  <button 
+797:                    onClick={() => folderInputRef.current?.click()}
+798:                    className="w-full md:w-auto shrink-0 flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest py-3 px-6 text-xs transition-colors rounded-sm"
+799:                  >
+800:                    <Folder className="w-4 h-4 text-emerald-950" />
+801:                    <span>{t.home.loadModFolder}</span>
+802:                  </button>
+803:                )}
+804:                {workspaceFiles.length > 0 && (
+805:                   <button 
+806:                     onClick={() => setWorkspaceFiles([])}
+807:                     className="w-full md:w-auto shrink-0 flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold uppercase tracking-widest py-2 px-4 text-[11px] transition-colors rounded-sm border border-slate-700"
+808:                   >
+809:                     <XCircle className="w-4 h-4" />
+810:                     <span>Clear Workspace</span>
+811:                   </button>
+812:                )}
+813:              </div>
+814:
+815:              {/* Grid Layout (3 Columns) */}
+816:              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full mb-8">
+817:                {/* XML Planet Database */}
+818:                <div className="bg-slate-900/40 p-6 border border-cyan-800/30 rounded flex flex-col justify-between text-left hover:border-cyan-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(6,182,212,0.02)]">
+819:                  <div>
+820:                    <div className="flex items-center space-x-2.5 mb-3">
+821:                      <Globe className="w-5 h-5 text-cyan-400 group-hover:animate-pulse" />
+822:                      <h3 className="text-sm font-bold text-cyan-300 tracking-widest uppercase font-mono">{t.home.xmlMapTitle}</h3>
+823:                    </div>
+824:                    <p className="text-xs text-slate-400 mb-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: t.home.xmlMapDesc.replace('Planets.xml', '<code class="text-cyan-400 font-mono">Planets.xml</code>') }}></p>
+825:                  </div>
+826:                  
+827:                  <div className="space-y-2 mt-auto">
+828:                    {workspaceFiles.some(f => f.name.toLowerCase() === 'planets.xml' || f.name.toLowerCase() === 'planet.xml') ? (
+829:                       <button 
+830:                         onClick={editGalaxyFromWorkspace}
+831:                         className="w-full flex items-center justify-center space-x-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-[11px] transition-colors"
+832:                       >
+833:                         <Globe className="w-4 h-4" />
+834:                         <span>{t.home.editGalaxy}</span>
+835:                       </button>
+836:                    ) : (
+837:                      <button 
+838:                        onClick={() => fileInputRef.current?.click()}
+839:                        className="w-full flex items-center justify-center space-x-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-[11px] transition-colors"
+840:                      >
+841:                        <Upload className="w-4 h-4" />
+842:                        <span>{t.importPlanets}</span>
+843:                      </button>
+844:                    )}
+845:                    <button 
+846:                      onClick={handleCreateNew}
+847:                      className="w-full flex items-center justify-center space-x-2 border border-cyan-800/50 hover:bg-cyan-900/30 text-cyan-500 hover:text-cyan-400 font-bold uppercase tracking-widest py-2 text-[10px] transition-colors"
+848:                    >
+849:                      <span>{t.initEmptyDb}</span>
+850:                    </button>
+851:                  </div>
+852:                </div>
+853:
+854:                {/* Story Editor */}
+855:                <div className="bg-slate-900/40 p-6 border border-emerald-900/30 rounded flex flex-col justify-between text-left hover:border-emerald-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(16,185,129,0.02)]">
+856:                  <div>
+857:                    <div className="flex items-center space-x-2.5 mb-3">
+858:                      <BookOpen className="w-5 h-5 text-emerald-400 group-hover:animate-pulse" />
+859:                      <h3 className="text-sm font-bold text-emerald-300 tracking-widest uppercase font-mono">{t.home.storyTitle}</h3>
+860:                    </div>
+861:                    <p className="text-xs text-slate-400 mb-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: t.home.storyDesc }}></p>
+862:                  </div>
+863:
+864:                  <div className="space-y-2 mt-auto">
+865:                    {workspaceFiles.some(f => f.name.toLowerCase().endsWith('.xml') && f.name.toLowerCase().includes('story')) ? (
+866:                      <select 
+867:                         onChange={(e) => {
+868:                            if (e.target.value) {
+869:                                loadStoryFromWorkspace(e.target.value);
+870:                                e.target.value = '';
+871:                            }
+872:                         }}
+873:                         className="w-full bg-slate-950 border border-emerald-800/50 text-slate-300 font-mono text-[10px] uppercase tracking-widest py-2.5 px-2 transition-colors focus:outline-none focus:border-emerald-500 cursor-pointer"
+874:                      >
+875:                         <option value="">{t.home.selectFile}</option>
+876:                         {workspaceFiles.filter(f => f.name.toLowerCase().endsWith('.xml') && f.name.toLowerCase().includes('story')).map((f, i) => (
+877:                           <option key={i} value={f.webkitRelativePath || f.name}>{f.name}</option>
+878:                         ))}
+879:                      </select>
+880:                    ) : (
+881:                      <button 
+882:                        onClick={() => storyFileInputRef.current?.click()}
+883:                        className="w-full flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-xs transition-colors"
+884:                      >
+885:                        <Upload className="w-4 h-4" />
+886:                        <span>{t.home.loadStory}</span>
+887:                      </button>
+888:                    )}
+889:                    <button 
+890:                      onClick={handleCreateNewStory}
+891:                      className="w-full flex items-center justify-center space-x-2 border border-emerald-800/50 hover:bg-emerald-900/30 text-emerald-400 hover:text-emerald-300 font-bold uppercase tracking-widest py-2 text-[10px] transition-colors"
+892:                    >
+893:                      <span>{t.home.createStory}</span>
+894:                    </button>
+895:                  </div>
+896:                </div>
+897:
+898:                {/* DAT Translation Tool */}
+899:                <div className="bg-slate-900/40 p-6 border border-purple-900/30 rounded flex flex-col justify-between text-left hover:border-purple-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(168,85,247,0.02)]">
+900:                  <div>
+901:                    <div className="flex items-center space-x-2.5 mb-3">
+902:                      <FileText className="w-5 h-5 text-purple-400 group-hover:animate-pulse" />
+903:                      <h3 className="text-sm font-bold text-purple-300 tracking-widest uppercase font-mono">{t.home.datTitle}</h3>
+904:                    </div>
+905:                    <p className="text-xs text-slate-400 mb-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: t.home.datDesc.replace('.DAT', '<code class="text-purple-400 font-mono">.DAT</code>') }}></p>
+906:                  </div>
+907:
+908:                  <div className="space-y-2 mt-auto">
+909:                    {workspaceFiles.some(f => f.name.toLowerCase().endsWith('.dat')) ? (
+910:                      <select 
+911:                         onChange={(e) => {
+912:                            if (e.target.value) {
+913:                                loadDatFromWorkspace(e.target.value);
+914:                                e.target.value = '';
+915:                            }
+916:                         }}
+917:                         className="w-full bg-slate-950 border border-purple-800/50 text-slate-300 font-mono text-[10px] uppercase tracking-widest py-2.5 px-2 transition-colors focus:outline-none focus:border-purple-500 cursor-pointer"
+918:                      >
+919:                        <option value="">{t.home.selectFile}</option>
+920:                        {workspaceFiles.filter(f => f.name.toLowerCase().endsWith('.dat')).map((f, i) => (
+921:                           <option key={i} value={f.webkitRelativePath || f.name}>{f.name}</option>
+922:                        ))}
+923:                      </select>
+924:                    ) : (
+925:                      <button 
+926:                        onClick={() => datFileInputRef.current?.click()}
+927:                        className="w-full flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-xs transition-colors"
+928:                      >
+929:                        <Upload className="w-4 h-4" />
+930:                        <span>{t.home.loadDat}</span>
+931:                      </button>
+932:                    )}
+933:                    <button 
+934:                      onClick={handleCreateNewDat}
+935:                      className="w-full flex items-center justify-center space-x-2 border border-purple-800/50 hover:bg-purple-900/30 text-purple-400 hover:text-purple-300 font-bold uppercase tracking-widest py-2 text-[10px] transition-colors"
+936:                    >
+937:                      <span>{t.home.createEmptyDat}</span>
+938:                    </button>
+939:                  </div>
+940:                </div>
+941:
+942:                {/* MTD Texture Tool */}
+943:                <div className="bg-slate-900/40 p-6 border border-amber-900/30 rounded flex flex-col justify-between text-left hover:border-amber-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(245,158,11,0.02)]">
+944:                  <div>
+945:                    <div className="flex items-center space-x-2.5 mb-3">
+946:                      <SettingsIcon className="w-5 h-5 text-amber-400 group-hover:animate-pulse" />
+947:                      <h3 className="text-sm font-bold text-amber-300 tracking-widest uppercase font-mono">{t.home.mtdTitle}</h3>
+948:                    </div>
+949:                    <p className="text-xs text-slate-400 mb-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: t.home.mtdDesc.replace('.MTD', '<code class="text-amber-400 font-mono">.MTD</code>') }}></p>
+950:                  </div>
+951:
+952:                  <div className="space-y-2 mt-auto">
+953:                    {workspaceFiles.some(f => f.name.toLowerCase().endsWith('.mtd')) ? (
+954:                      <select 
+955:                         onChange={(e) => {
+956:                            if (e.target.value) {
+957:                                loadMtdFromWorkspace(e.target.value);
+958:                                e.target.value = '';
+959:                            }
+960:                         }}
+961:                         className="w-full bg-slate-950 border border-amber-800/50 text-slate-300 font-mono text-[10px] uppercase tracking-widest py-2.5 px-2 transition-colors focus:outline-none focus:border-amber-500 cursor-pointer"
+962:                      >
+963:                         <option value="">{t.home.selectFile}</option>
+964:                         {workspaceFiles.filter(f => f.name.toLowerCase().endsWith('.mtd')).map((f, i) => (
+965:                           <option key={i} value={f.webkitRelativePath || f.name}>{f.name}</option>
+966:                         ))}
+967:                      </select>
+968:                    ) : (
+969:                      <button 
+970:                        onClick={() => mtdFileInputRef.current?.click()}
+971:                        className="w-full flex items-center justify-center space-x-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-xs transition-colors"
+972:                      >
+973:                        <Upload className="w-4 h-4" />
+974:                        <span>{t.home.loadMtd}</span>
+975:                      </button>
+976:                    )}
+977:                  </div>
+978:                </div>
+979:              </div>
+980:
+981:              {/* User Manual/Docs bottom row */}
+982:              <div className="pt-6 border-t border-slate-900 w-full flex justify-center">
+983:                <button 
+984:                  onClick={() => setIsManualOpen(true)}
+985:                  className="flex items-center space-x-2 border border-slate-800 hover:border-cyan-500/30 hover:bg-slate-900/40 text-slate-400 hover:text-cyan-400 font-mono text-[10px] uppercase tracking-widest py-2 px-5 transition-all cursor-pointer rounded"
+986:                >
+987:                  <BookOpen className="w-4 h-4" />
+988:                  <span>{t.userManual}</span>
+989:                </button>
+990:              </div>
+991:            </div>
+992:          </div>
+993:        )}
+994:      </main>
+995:
+996:      <BulkEditModal 
+997:        isOpen={isBulkEditOpen}
+998:        onClose={() => setIsBulkEditOpen(false)}
+999:        planets={planets}
+1000:        onApply={handleBulkUpdate}
+1001:      />
+1002:
+1003:      <SettingsModal
+1004:        isOpen={isSettingsOpen}
+1005:        onClose={() => setIsSettingsOpen(false)}
+1006:        settings={settings}
+1007:        onUpdateSettings={setSettings}
+1008:      />
+1009:
+1010:      <ManualModal
+1011:        isOpen={isManualOpen}
+1012:        onClose={() => setIsManualOpen(false)}
+1013:      />
+1014:
+1015:      <UpdaterUI />
+1016:
+1017:      <input type="file" ref={fileInputRef} className="hidden" accept=".xml" onChange={handleFileUpload} />
+1018:      <input type="file" ref={trFileInputRef} className="hidden" accept=".xml" onChange={handleTradeRoutesUpload} />
+1019:      <input type="file" ref={datFileInputRef} className="hidden" accept=".dat" onChange={handleDatFileUpload} />
+1020:      <input type="file" ref={mtdFileInputRef} className="hidden" accept=".mtd,.tga,.png,.jpg" multiple onChange={handleMtdUpload} />
+1021:      <input type="file" ref={storyFileInputRef} className="hidden" accept=".xml" onChange={handleStoryUpload} />
+1022:      <input type="file" ref={folderInputRef} className="hidden" 
+1023:             {...{ webkitdirectory: "true", directory: "true" } as any} 
+1024:             multiple onChange={handleFolderUpload} />
+1025:    </div>
+1026:  );
+1027:}
+1028:
+1029:const SETTINGS_STORAGE_KEY = 'eaw_tool_settings';
+1030:
+1031:export default function App() {
+1032:  const [settings, setSettings] = useState<AppSettings>(() => {
+1033:    const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
+1034:    if (saved) {
+1035:      try {
+1036:        const parsed = JSON.parse(saved);
+1037:        return {
+1038:          invertY: parsed.invertY ?? false,
+1039:          showGrid: parsed.showGrid ?? false,
+1040:          snapToGrid: parsed.snapToGrid ?? false,
+1041:          gridSize: parsed.gridSize ?? 1.0,
+1042:          language: parsed.language ?? 'en',
+1043:          storyXmlEditable: parsed.storyXmlEditable ?? false,
+1044:        };
+1045:      } catch (e) {
+1046:        console.error("Failed to parse settings", e);
+1047:      }
+1048:    }
+1049:    return {
+1050:      invertY: false,
+1051:      showGrid: false,
+1052:      snapToGrid: false,
+1053:      gridSize: 1.0,
+1054:      language: 'en',
+1055:      storyXmlEditable: false,
+1056:    };
+1057:  });
+1058:
+1059:  React.useEffect(() => {
+1060:    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+1061:  }, [settings]);
+1062:
+1063:  return (
+1064:    <I18nProvider lang={settings.language}>
+1065:      <AppContent settings={settings} setSettings={setSettings} />
+1066:    </I18nProvider>
+1067:  );
+1068:}

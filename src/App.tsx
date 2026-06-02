@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import packageJson from '../package.json';
-import { Upload, Download, Moon, AlertTriangle, Database, XCircle, Route, Globe, BookOpen, FileText, Settings as SettingsIcon, RefreshCw } from 'lucide-react';
+import { Upload, Download, Moon, AlertTriangle, Database, XCircle, Route, Globe, BookOpen, FileText, Settings as SettingsIcon, RefreshCw, Folder } from 'lucide-react';
 import { Planet, TradeRoute, AppSettings, StoryEvent } from './types';
 import { parsePlanetsXml, parseTradeRoutesXml, serializeXml, updatePlanetPositionInDoc, parseStoryXml } from './lib/xml';
 import PlanetList from './components/PlanetList';
@@ -17,7 +17,7 @@ import StoryEditor from './components/StoryEditor';
 import UpdaterUI from './components/UpdaterUI';
 import { parseDatFile, DatRecord } from './lib/dat';
 import { parseMtd, MtdIcon } from './lib/mtd';
-import { I18nProvider, useTranslation } from './i18n';
+import { I18nProvider, useTranslation, useLanguage } from './i18n';
 
 function AppContent({ settings, setSettings }: { settings: AppSettings, setSettings: (s: AppSettings) => void }) {
   const t = useTranslation();
@@ -47,13 +47,126 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
   const [storyEvents, setStoryEvents] = useState<StoryEvent[] | null>(null);
   const [storyFileName, setStoryFileName] = useState<string>('Story.xml');
 
+  const [workspaceFiles, setWorkspaceFiles] = useState<File[]>([]);
+  const [selectedDatPath, setSelectedDatPath] = useState<string>('');
+  const [selectedMtdPath, setSelectedMtdPath] = useState<string>('');
+  const [selectedStoryPath, setSelectedStoryPath] = useState<string>('');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const trFileInputRef = useRef<HTMLInputElement>(null);
   const datFileInputRef = useRef<HTMLInputElement>(null);
   const mtdFileInputRef = useRef<HTMLInputElement>(null);
   const storyFileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
+  
+  const lang = useLanguage();
 
   const displayPlanets = planets.filter(p => showCore || p.name.toLowerCase() !== 'galaxy_core_art_model');
+
+  const handleFolderUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    setWorkspaceFiles(files);
+    setSelectedDatPath('');
+    setSelectedMtdPath('');
+    setSelectedStoryPath('');
+    setError(null);
+    
+    if (folderInputRef.current) folderInputRef.current.value = '';
+  };
+
+  const readFileAsText = (file: File) => {
+        return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => resolve(event.target?.result as string);
+            reader.onerror = (err) => reject(err);
+            reader.readAsText(file);
+        });
+    };
+
+    const readFileAsArrayBuffer = (file: File) => {
+        return new Promise<ArrayBuffer>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => resolve(event.target?.result as ArrayBuffer);
+            reader.onerror = (err) => reject(err);
+            reader.readAsArrayBuffer(file);
+        });
+    };
+
+    const editGalaxyFromWorkspace = async () => {
+    let planetsFile = workspaceFiles.find(f => f.name.toLowerCase() === 'planets.xml' || f.name.toLowerCase() === 'planet.xml');
+    let routesFile = workspaceFiles.find(f => f.name.toLowerCase() === 'traderoutes.xml');
+    
+    try {
+        if (planetsFile) {
+            const content = await readFileAsText(planetsFile);
+            const parsed = parsePlanetsXml(content);
+            setXmlDoc(parsed.doc);
+            setPlanets(parsed.planets);
+            setSelectedPlanet(null);
+        }
+        if (routesFile) {
+            const content = await readFileAsText(routesFile);
+            const parsed = parseTradeRoutesXml(content);
+            setTradeRoutesXmlDoc(parsed.doc);
+            setTradeRoutes(parsed.tradeRoutes);
+        }
+        if (!planetsFile && !routesFile) {
+           setError(lang === 'es' ? 'No se encontraron archivos XML de galaxia (Planets.xml o TradeRoutes.xml) en el workspace.' : 'No galaxy XML files (Planets.xml or TradeRoutes.xml) found in workspace.');
+        }
+    } catch (err: any) {
+        setError(err.message || 'Error parsing Galaxy XMLs');
+    }
+  };
+
+  const loadDatFromWorkspace = async (path: string) => {
+    const datFile = workspaceFiles.find(f => f.webkitRelativePath === path || f.name === path);
+    if (!datFile) return;
+    try {
+        const buffer = await readFileAsArrayBuffer(datFile);
+        const parsed = parseDatFile(buffer);
+        setDatRecords(parsed.records);
+        setDatFormat(parsed.format);
+        setDatFileName(datFile.name);
+    } catch (err: any) {
+        setError(err.message || 'Error parsing .DAT file');
+    }
+  };
+
+  const loadMtdFromWorkspace = async (path: string) => {
+    const mtdFile = workspaceFiles.find(f => f.webkitRelativePath === path || f.name === path);
+    if (!mtdFile) return;
+    try {
+        const buffer = await readFileAsArrayBuffer(mtdFile);
+        const parsed = parseMtd(buffer);
+        setMtdIcons(parsed);
+        setMtdFileName(mtdFile.name);
+        
+        const baseName = mtdFile.name.replace(/\.[^/.]+$/, "").toLowerCase();
+        let mtdTexture = workspaceFiles.find(f => {
+            const fname = f.name.toLowerCase();
+            return fname === `${baseName}.tga` || fname === `${baseName}.png` || fname === `${baseName}.jpg`;
+        });
+        setMtdInitialTexture(mtdTexture || null);
+    } catch (err: any) {
+        setError(err.message || 'Error parsing .MTD file');
+    }
+  };
+
+  const loadStoryFromWorkspace = async (path: string) => {
+    const storyFile = workspaceFiles.find(f => f.webkitRelativePath === path || f.name === path);
+    if (!storyFile) return;
+    try {
+        const content = await readFileAsText(storyFile);
+        const parsed = parseStoryXml(content);
+        setStoryDoc(parsed.doc);
+        setStoryEvents(parsed.storyEvents);
+        setStoryFileName(storyFile.name);
+    } catch (err: any) {
+        setError(err.message || 'Error parsing Story XML');
+    }
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -557,10 +670,10 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
                    
                    <button 
                       onClick={handleCloseProject}
-                      className="p-1 px-2 border border-slate-700/60 hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400 text-slate-400 text-[10px] uppercase font-bold tracking-wider transition-all flex items-center space-x-1 whitespace-nowrap"
+                      className="p-1.5 border border-slate-700/60 hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400 text-slate-400 transition-all rounded-sm ml-1 flex items-center justify-center"
+                      title={t.closeProject}
                    >
-                     <XCircle className="w-3 h-3" />
-                     <span className="hidden sm:inline">{t.closeProject}</span>
+                     <XCircle className="w-4 h-4" />
                    </button>
                 </div>
              </div>
@@ -659,6 +772,46 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
                 </div>
               )}
 
+              {/* Mod Workspace Banner */}
+              <div className="w-full bg-slate-900/40 p-5 border border-emerald-800/50 rounded flex flex-col md:flex-row items-center justify-between text-left mb-6 hover:border-emerald-500/50 transition-colors shadow-[0_0_20px_rgba(16,185,129,0.02)]">
+                <div className="mb-4 md:mb-0">
+                  <h3 className="text-sm font-bold text-emerald-400 tracking-widest uppercase font-mono flex items-center space-x-2">
+                    <Folder className="w-5 h-5" />
+                    <span>Workspace</span>
+                  </h3>
+                  {workspaceFiles.length > 0 ? (
+                    <p className="text-xs text-slate-300 mt-2 font-mono flex items-center bg-slate-950 px-3 py-1.5 rounded-sm border border-emerald-900/40 inline-flex">
+                      <span className="text-emerald-500 mr-2">{t.home.workspaceLoaded}</span>
+                      {workspaceFiles.length} files loaded
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-400 mt-1 max-w-xl leading-relaxed">
+                      {lang === 'es' 
+                         ? "Carga una carpeta completa 'Data' o un directorio de Mod. Corvus identificará los archivos soportados automáticamente para cargarlos bajo demanda." 
+                         : "Load a full 'Data' folder or Mod directory. Corvus will automatically identify supported files and load them on demand."}
+                    </p>
+                  )}
+                </div>
+                {!workspaceFiles.length && (
+                  <button 
+                    onClick={() => folderInputRef.current?.click()}
+                    className="w-full md:w-auto shrink-0 flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest py-3 px-6 text-xs transition-colors rounded-sm"
+                  >
+                    <Folder className="w-4 h-4 text-emerald-950" />
+                    <span>{t.home.loadModFolder}</span>
+                  </button>
+                )}
+                {workspaceFiles.length > 0 && (
+                   <button 
+                     onClick={() => setWorkspaceFiles([])}
+                     className="w-full md:w-auto shrink-0 flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold uppercase tracking-widest py-2 px-4 text-[11px] transition-colors rounded-sm border border-slate-700"
+                   >
+                     <XCircle className="w-4 h-4" />
+                     <span>Clear Workspace</span>
+                   </button>
+                )}
+              </div>
+
               {/* Grid Layout (3 Columns) */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full mb-8">
                 {/* XML Planet Database */}
@@ -672,13 +825,23 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
                   </div>
                   
                   <div className="space-y-2 mt-auto">
-                    <button 
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full flex items-center justify-center space-x-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-xs transition-colors"
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span>{t.importPlanets}</span>
-                    </button>
+                    {workspaceFiles.some(f => f.name.toLowerCase() === 'planets.xml' || f.name.toLowerCase() === 'planet.xml') ? (
+                       <button 
+                         onClick={editGalaxyFromWorkspace}
+                         className="w-full flex items-center justify-center space-x-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-[11px] transition-colors"
+                       >
+                         <Globe className="w-4 h-4" />
+                         <span>{t.home.editGalaxy}</span>
+                       </button>
+                    ) : (
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full flex items-center justify-center space-x-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-[11px] transition-colors"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>{t.importPlanets}</span>
+                      </button>
+                    )}
                     <button 
                       onClick={handleCreateNew}
                       className="w-full flex items-center justify-center space-x-2 border border-cyan-800/50 hover:bg-cyan-900/30 text-cyan-500 hover:text-cyan-400 font-bold uppercase tracking-widest py-2 text-[10px] transition-colors"
@@ -699,13 +862,30 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
                   </div>
 
                   <div className="space-y-2 mt-auto">
-                    <button 
-                      onClick={() => storyFileInputRef.current?.click()}
-                      className="w-full flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-xs transition-colors"
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span>{t.home.loadStory}</span>
-                    </button>
+                    {workspaceFiles.some(f => f.name.toLowerCase().endsWith('.xml') && f.name.toLowerCase().includes('story')) ? (
+                      <select 
+                         onChange={(e) => {
+                            if (e.target.value) {
+                                loadStoryFromWorkspace(e.target.value);
+                                e.target.value = '';
+                            }
+                         }}
+                         className="w-full bg-slate-950 border border-emerald-800/50 text-slate-300 font-mono text-[10px] uppercase tracking-widest py-2.5 px-2 transition-colors focus:outline-none focus:border-emerald-500 cursor-pointer"
+                      >
+                         <option value="">{t.home.selectFile}</option>
+                         {workspaceFiles.filter(f => f.name.toLowerCase().endsWith('.xml') && f.name.toLowerCase().includes('story')).map((f, i) => (
+                           <option key={i} value={f.webkitRelativePath || f.name}>{f.name}</option>
+                         ))}
+                      </select>
+                    ) : (
+                      <button 
+                        onClick={() => storyFileInputRef.current?.click()}
+                        className="w-full flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-xs transition-colors"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>{t.home.loadStory}</span>
+                      </button>
+                    )}
                     <button 
                       onClick={handleCreateNewStory}
                       className="w-full flex items-center justify-center space-x-2 border border-emerald-800/50 hover:bg-emerald-900/30 text-emerald-400 hover:text-emerald-300 font-bold uppercase tracking-widest py-2 text-[10px] transition-colors"
@@ -726,13 +906,30 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
                   </div>
 
                   <div className="space-y-2 mt-auto">
-                    <button 
-                      onClick={() => datFileInputRef.current?.click()}
-                      className="w-full flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-xs transition-colors"
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span>{t.home.loadDat}</span>
-                    </button>
+                    {workspaceFiles.some(f => f.name.toLowerCase().endsWith('.dat')) ? (
+                      <select 
+                         onChange={(e) => {
+                            if (e.target.value) {
+                                loadDatFromWorkspace(e.target.value);
+                                e.target.value = '';
+                            }
+                         }}
+                         className="w-full bg-slate-950 border border-purple-800/50 text-slate-300 font-mono text-[10px] uppercase tracking-widest py-2.5 px-2 transition-colors focus:outline-none focus:border-purple-500 cursor-pointer"
+                      >
+                        <option value="">{t.home.selectFile}</option>
+                        {workspaceFiles.filter(f => f.name.toLowerCase().endsWith('.dat')).map((f, i) => (
+                           <option key={i} value={f.webkitRelativePath || f.name}>{f.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <button 
+                        onClick={() => datFileInputRef.current?.click()}
+                        className="w-full flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-xs transition-colors"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>{t.home.loadDat}</span>
+                      </button>
+                    )}
                     <button 
                       onClick={handleCreateNewDat}
                       className="w-full flex items-center justify-center space-x-2 border border-purple-800/50 hover:bg-purple-900/30 text-purple-400 hover:text-purple-300 font-bold uppercase tracking-widest py-2 text-[10px] transition-colors"
@@ -753,13 +950,30 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
                   </div>
 
                   <div className="space-y-2 mt-auto">
-                    <button 
-                      onClick={() => mtdFileInputRef.current?.click()}
-                      className="w-full flex items-center justify-center space-x-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-xs transition-colors"
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span>{t.home.loadMtd}</span>
-                    </button>
+                    {workspaceFiles.some(f => f.name.toLowerCase().endsWith('.mtd')) ? (
+                      <select 
+                         onChange={(e) => {
+                            if (e.target.value) {
+                                loadMtdFromWorkspace(e.target.value);
+                                e.target.value = '';
+                            }
+                         }}
+                         className="w-full bg-slate-950 border border-amber-800/50 text-slate-300 font-mono text-[10px] uppercase tracking-widest py-2.5 px-2 transition-colors focus:outline-none focus:border-amber-500 cursor-pointer"
+                      >
+                         <option value="">{t.home.selectFile}</option>
+                         {workspaceFiles.filter(f => f.name.toLowerCase().endsWith('.mtd')).map((f, i) => (
+                           <option key={i} value={f.webkitRelativePath || f.name}>{f.name}</option>
+                         ))}
+                      </select>
+                    ) : (
+                      <button 
+                        onClick={() => mtdFileInputRef.current?.click()}
+                        className="w-full flex items-center justify-center space-x-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-xs transition-colors"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>{t.home.loadMtd}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -805,6 +1019,9 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
       <input type="file" ref={datFileInputRef} className="hidden" accept=".dat" onChange={handleDatFileUpload} />
       <input type="file" ref={mtdFileInputRef} className="hidden" accept=".mtd,.tga,.png,.jpg" multiple onChange={handleMtdUpload} />
       <input type="file" ref={storyFileInputRef} className="hidden" accept=".xml" onChange={handleStoryUpload} />
+      <input type="file" ref={folderInputRef} className="hidden" 
+             {...{ webkitdirectory: "true", directory: "true" } as any} 
+             multiple onChange={handleFolderUpload} />
     </div>
   );
 }

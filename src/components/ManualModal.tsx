@@ -150,10 +150,32 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
                 <h3 className="text-base font-bold text-cyan-400 uppercase tracking-wider border-b border-cyan-800 pb-2">
                   {isEn ? "2. Getting Started (Importing XMLs)" : "2. Empezando a trabajar (Importar XMLs)"}
                 </h3>
+                <div className="bg-slate-900 border border-emerald-900/40 p-4 rounded-sm space-y-3 mb-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="mt-1 opacity-70">
+                      <Layers className="w-4 h-4 text-emerald-500" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-emerald-400 block mb-0.5 uppercase tracking-wide">
+                        {isEn ? "Workspace Flow (Recommended)" : "Flujo de Trabajo (Recomendado)"}
+                      </span>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        {isEn
+                          ? "You can now load your entire 'Data' folder directly from the home screen workspace panel. Corvus will memorize the directory and intelligently feed the related files into the Dat, Mtd, XML and Story editors under a common unified state."
+                          : "Ahora puedes cargar tu carpeta entera de 'Data' directamente desde la pantalla de inicio. Corvus memorizará el directorio y alimentará de forma inteligente los editores XML, DAT, MTD e Historia bajo un único estado unificado."
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <h4 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-2 mt-6">
+                  {isEn ? "Manual XML Loading" : "Carga Manual de XMLs"}
+                </h4>
                 <p className="text-xs leading-relaxed text-slate-300">
                   {isEn 
-                    ? "CORVUS reads official XML files from the XML directory of your Empire at War modification. To ensure logical dependencies resolve correctly, we strongly advise using this strict loading order:"
-                    : "CORVUS lee los archivos XML oficiales del directorio de datos de tu modificación de Empire at War. Para garantizar que las dependencias lógicas se resuelvan correctamente, te recomendamos seguir este estricto orden de carga:"
+                    ? "If you prefer doing it manually, CORVUS reads official XML files. To ensure logical dependencies resolve correctly, use this loading order:"
+                    : "Si prefieres trabajar manualmente conectando archivos sueltos. Para garantizar que las dependencias lógicas se resuelvan correctamente utiliza el orden:"
                   }
                 </p>
 
@@ -328,8 +350,8 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
                       </span>
                       <p className="text-[11px] text-slate-400">
                         {isEn
-                          ? "Load your .MTD file, then click 'Load Texture' to visually overlay the boundaries onto your .TGA / .PNG icon grid image."
-                          : "Carga tu archivo .MTD y oprime 'Cargar Textura' para superponer los cuadros UV sobre el gráfico tga y poder orientarte correctamente."
+                          ? "Load your .MTD file, then click 'Load Texture' to visually overlay the boundaries onto your .TGA / .PNG icon grid image. (If you use the Workspace loader, the texture is automatically found and mapped)."
+                          : "Carga tu archivo .MTD y oprime 'Cargar Textura' para superponer los cuadros UV sobre el gráfico tga y poder orientarte correctamente. (Si se carga vía Workspace, se auto-detecta la textura)."
                         }
                       </p>
                     </div>

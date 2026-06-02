@@ -422,10 +422,10 @@ export default function MtdEditor({ initialIcons, fileName, initialTextureFile, 
 
           <button
             onClick={onClose}
-            className="p-1 px-2 border border-slate-700/60 hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400 text-slate-400 text-[10px] uppercase font-bold tracking-wider transition-all flex items-center space-x-1"
+            className="p-1.5 border border-slate-700/60 hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400 text-slate-400 transition-all rounded-sm ml-1 flex items-center justify-center"
+            title={t.mtdEditor.closeBtn}
           >
             <X className="w-4 h-4" />
-            <span>{t.mtdEditor.closeBtn}</span>
           </button>
         </div>
       </div>
