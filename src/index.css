@@ -2,41 +2,71 @@
 
 /* Prism XML Styles for react-simple-code-editor */
 .editor-custom-styles {
-    color: #f97316 !important; /* text-orange-500 default color for values/text */
+    color: #cbd5e1 !important; /* Slate-300 default color */
 }
 .editor-custom-styles .token.comment {
-    color: #22c55e !important; /* text-green-500 */
+    color: #64748b !important; /* Slate-500 */
     font-style: italic;
 }
 .editor-custom-styles .token.tag {
-    color: #67e8f9; /* cyan-300 */
+    color: #f472b6; /* rose-400 */
 }
 .editor-custom-styles .token.tag .token.punctuation {
-    color: #64748b; /* slate-500 for < > </ /> */
+    color: #94a3b8; /* slate-400 */
 }
-.editor-custom-styles .token.tag .token.namespace {
-    color: #67e8f9;
-}
-.editor-custom-styles .token.tag .token.name,
-.editor-custom-styles .token.name {
-    color: #67e8f9; /* cyan-300 */
+.editor-custom-styles .token.tag .token.name {
+    color: #f472b6; /* rose-400 */
     font-weight: bold;
 }
 .editor-custom-styles .token.attr-name {
-    color: #ef4444; /* red-500 */
+    color: #fbbf24; /* amber-400 */
 }
 .editor-custom-styles .token.attr-value {
-    color: #fcd34d; /* amber-300 */
-}
-.editor-custom-styles .token.attr-value .token.punctuation {
-    color: #ef4444; /* matching attr-name, or slate-500 */
+    color: #94a3b8; /* slate-400 */
 }
 .editor-custom-styles .token.punctuation.attr-equals {
-    color: #64748b; /* slate-500 */
+    color: #94a3b8; /* slate-400 */
 }
 /* Any generic punctuation in markup like = */
 .editor-custom-styles .token.punctuation {
-    color: #64748b; /* slate-500 */
+    color: #94a3b8; /* slate-400 */
+}
+.editor-custom-styles .token.string {
+    color: #fbbf24; /* amber-400 */
+}
+
+/* Prism LUA Styles for react-simple-code-editor */
+.lua-editor-styles {
+    color: #e2e8f0 !important; /* text-slate-200 default color */
+}
+.lua-editor-styles .token.comment {
+    color: #64748b !important; /* slate-500 */
+    font-style: italic;
+}
+.lua-editor-styles .token.keyword {
+    color: #c678dd; /* purple for keywords like function, local, if */
+    font-weight: bold;
+}
+.lua-editor-styles .token.function {
+    color: #61afef; /* blue for function names */
+}
+.lua-editor-styles .token.string {
+    color: #98c379; /* green for strings */
+}
+.lua-editor-styles .token.number {
+    color: #d19a66; /* orange for numbers */
+}
+.lua-editor-styles .token.operator {
+    color: #56b6c2; /* cyan for operators */
+}
+.lua-editor-styles .token.punctuation {
+    color: #abb2bf; /* light gray for punctuation */
+}
+.lua-editor-styles .token.boolean {
+    color: #d19a66; /* orange for boolean */
+}
+.lua-editor-styles .token.builtin {
+    color: #e5c07b; /* yellow for builtins */
 }
 
 @keyframes shine {

@@ -1,0 +1,2202 @@
+[
+  {
+    "name": "Script",
+    "param": "All",
+    "desc": "The current script as LuaScriptWrapper"
+  },
+  {
+    "name": "ServiceRate",
+    "param": "All(?)",
+    "desc": "The amount of time (in seconds) the script is suspended after a coroutine yield (i.e. call to PumpEvents). This is adjusted to an integer number of frames and is always at least 1 frame or 0.033 seconds. Can be adjusted at any point in the script(?)."
+  },
+  {
+    "name": "LuaThreadTable",
+    "param": "All?",
+    "desc": "Table whose keys are objects of type thread and whose entries are booleans. The first entry contains the main thread."
+  },
+  {
+    "name": "LuaWrapperMetaTable",
+    "param": "All(?)",
+    "desc": "The meta table for all GameObjectWrappers and PlayerWrappers and maybe all other objects. Has entries for __call, __gc, __eq, __tostring and __index."
+  },
+  {
+    "name": "PlayerObject",
+    "param": "AI, Freestore and Evaluator scripts",
+    "desc": "The AI player the script is attached to"
+  },
+  {
+    "name": "Target",
+    "param": "AI and Evaluator scripts",
+    "desc": "The target considered (game object at least in galactic mode)"
+  },
+  {
+    "name": "AITarget",
+    "param": "AI and Evaluator scripts",
+    "desc": "AITargetLocationWrapper (use .Get_Game_Object() to get corresponding game object if there is one, e.g. the planet in galactic mode)"
+  },
+  {
+    "name": "Object",
+    "param": "Object scripts",
+    "desc": "The GameObjectWrapper the script is attached to."
+  },
+  {
+    "name": "GetEvent",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Used to run event handlers like Default_Space_Conflict_Begin. Returns a function when 'C' wants it to be called."
+  },
+  {
+    "name": "GetEvent.Params",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns the parameters for the function call"
+  },
+  {
+    "name": "GetEvent.Reset",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Clear out any thread events"
+  },
+  {
+    "name": "lc",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "LuaConsolePrint (no luck finding out where it prints to if anywhere at all)"
+  },
+  {
+    "name": "DumpCallStack",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "GetThreadID",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Seems to be equivalent to Thread.Get_Current_ID()"
+  },
+  {
+    "name": "_OuputDebug",
+    "param": "X = string",
+    "desc": "Prints to _LogFile.txt. Notice the spelling mistake."
+  },
+  {
+    "name": "_MessagePopup",
+    "param": "X = string",
+    "desc": "Trigger a message popup window"
+  },
+  {
+    "name": "_CustomScriptMessage",
+    "param": "X = string(file name), Y = string",
+    "desc": "Print to X. (X can only be a file name, no path)"
+  },
+  {
+    "name": "_DebugBreak",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "_ScriptMessage",
+    "param": "X = string",
+    "desc": "Prints to the AILog if it is enabled"
+  },
+  {
+    "name": "_ScriptExit",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "StringCompare",
+    "param": "X = string, Y = string",
+    "desc": "-"
+  },
+  {
+    "name": "BlockForever",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Is_Multiplayer_Mode",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Get_Game_Mode",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns \"Land\", \"Space\" or \"Galactic\""
+  },
+  {
+    "name": "Is_Campaign_Game",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "True for GC games"
+  },
+  {
+    "name": "Lock_Controls",
+    "param": "X = 0,1",
+    "desc": "(Un)Lock all player controls"
+  },
+  {
+    "name": "Suspend_AI",
+    "param": "X = 0,1",
+    "desc": "-"
+  },
+  {
+    "name": "Cancel_Fast_Forward",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Stops fast forward"
+  },
+  {
+    "name": "Resume_Hyperspace_In",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "In tactical missions when reward parameter 9 of LINK_TACTICAL is set to 2, this will trigger the arrival of the attacking fleet."
+  },
+  {
+    "name": "Game_Message",
+    "param": "X = text string from dat file",
+    "desc": "Displays the text entry as a droid advisor hint"
+  },
+  {
+    "name": "Add_Objective",
+    "param": "X = text string, Y = bool",
+    "desc": "For Y = true the objective is added under the heading \"Battle Information\", for Y = false it is added under the heading \"Mission Objectives\""
+  },
+  {
+    "name": "Remove_Planet_Highlight",
+    "param": "X = string",
+    "desc": "-"
+  },
+  {
+    "name": "Add_Planet_Highlight",
+    "param": "X = planet object, Y = string",
+    "desc": "-"
+  },
+  {
+    "name": "Remove_Radar_Blip",
+    "param": "X = string(identifier)",
+    "desc": "Removes the radar blip identified by X (see Add_Radar_Blip)"
+  },
+  {
+    "name": "Add_Radar_Blip",
+    "param": "X = game object, Y = string(identifier)",
+    "desc": "Add a radar blip at X with identifier Y"
+  },
+  {
+    "name": "Hide_Sub_Object",
+    "param": "X = game object, Y = 0,1, Z = string",
+    "desc": "-"
+  },
+  {
+    "name": "Hide_Object",
+    "param": "X = game object, Y = 0,1",
+    "desc": "-"
+  },
+  {
+    "name": "Assemble_Fleet",
+    "param": "X = list of game object",
+    "desc": "Assembles the passed objects into a fleet and returns the fleet object"
+  },
+  {
+    "name": "Is_Point_In_Asteroid_Field",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Is_Point_In_Ion_Storm",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Is_Point_In_Nebula",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Are_On_Opposite_Sides_Of_Shield",
+    "param": "X = position, Y = position",
+    "desc": "-"
+  },
+  {
+    "name": "Are_On_Opposite_Sides_Of_Shield",
+    "param": "X = position, Y = position, Z = player, U = bool",
+    "desc": "-"
+  },
+  {
+    "name": "Activate_Retry_Dialog",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "WaitForStarbase",
+    "param": "X = planet object, Y = number",
+    "desc": "-"
+  },
+  {
+    "name": "WaitForGroundbase",
+    "param": "X = planet object, Y = number",
+    "desc": "-"
+  },
+  {
+    "name": "GetNextGroundbaseType",
+    "param": "X = planet object",
+    "desc": "-"
+  },
+  {
+    "name": "GetNextStarbaseType",
+    "param": "X = planet object",
+    "desc": "-"
+  },
+  {
+    "name": "GetCurrentTime",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns game time in seconds"
+  },
+  {
+    "name": "GetCurrentTime.Frame",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "GetCurrentTime.Galactic_Time",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Find_Player",
+    "param": "X = faction name",
+    "desc": "Returns a PlayerWrapper object"
+  },
+  {
+    "name": "Find_Object_Type",
+    "param": "X = type name",
+    "desc": "Returns a GameObjectTypeWrapper object"
+  },
+  {
+    "name": "Find_All_Objects_Of_Type",
+    "param": "X = property flag, player, type name or category",
+    "desc": "Literally finds all objects of this type. That may include projectiles or other unexpected objects."
+  },
+  {
+    "name": "Find_All_Objects_Of_Type",
+    "param": "X = property flag, Y = player",
+    "desc": "-"
+  },
+  {
+    "name": "Find_All_Objects_Of_Type",
+    "param": "X = player , Y = category",
+    "desc": "Categories can be piped together"
+  },
+  {
+    "name": "Find_First_Object",
+    "param": "X = string(type name)",
+    "desc": "Returns the first object of the given type. Possibly finds objects in reverse spawn order."
+  },
+  {
+    "name": "FindDeadlyEnemy",
+    "param": "X = game object or taskforce",
+    "desc": "Returns (the most powerful?) unit attacking X if there is one. Has turned out somewhat unreliable in some cases."
+  },
+  {
+    "name": "Find_Hint",
+    "param": "X = string(type name), Y = string(hint)",
+    "desc": "Find an object with a given hint (as set in the map editor)."
+  },
+  {
+    "name": "Find_All_Objects_With_Hint",
+    "param": "X = string(hint)",
+    "desc": "-"
+  },
+  {
+    "name": "Find_Nearest",
+    "param": "X = game object (or taskforce or ai target?), Y = type name",
+    "desc": "Returns the nearest object to X that is of type Y. May return nil."
+  },
+  {
+    "name": "Find_Nearest",
+    "param": "X = game object, ai target or taskfore, Y = player, Z = bool",
+    "desc": "Returns the nearest unit to X belonging to Y if Z == true. Otherwise it will return the closest unit belonging to an enemy of Y."
+  },
+  {
+    "name": "Find_Nearest",
+    "param": "X = game object, ai target or taskfore, Y = string(property flag or category mask), Z = player, U = bool",
+    "desc": "-"
+  },
+  {
+    "name": "Find_Nearest_Space_Field",
+    "param": "X = game object or taskforce, Y = \"Asteroid\"/\"Nebula\"/\"Ion_Storm\"?",
+    "desc": "-"
+  },
+  {
+    "name": "Find_Best_Local_Threat_Center",
+    "param": "X = unit list, Y = number(distance)",
+    "desc": "Returns position and combined threat of units (from the unit list) in range of the position."
+  },
+  {
+    "name": "Get_Most_Defended_Position",
+    "param": "X = game object (or position?), Y = player",
+    "desc": "Tactical only"
+  },
+  {
+    "name": "Project_By_Unit_Range",
+    "param": "X = game object, Y = game object or taskforce",
+    "desc": "Tactical only. Returns a position outside the range of X"
+  },
+  {
+    "name": "Find_Path",
+    "param": "X = player, Y = planet object, Z = planet object",
+    "desc": "GC only. Only for AI players. Returns a list of planet objects."
+  },
+  {
+    "name": "FindPlanet",
+    "param": "X = string(planet name)",
+    "desc": "GC only"
+  },
+  {
+    "name": "FindPlanet.Get_All_Planets",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "GC only"
+  },
+  {
+    "name": "Spawn_Special_Weapon",
+    "param": "X = string, Y = player",
+    "desc": "Space only"
+  },
+  {
+    "name": "Spawn_From_Reinforcement_Pool",
+    "param": "player, position, type (in what order?)",
+    "desc": ""
+  },
+  {
+    "name": "Create_Generic_Object",
+    "param": "X = game object type/type name, Y = position, Z = player",
+    "desc": "This spawns X at Y without regard for collision. Be sure to use a position for Y, using a game object can often crash the script."
+  },
+  {
+    "name": "Spawn_Unit",
+    "param": "X = game object type, Y = position or game object, Z = player",
+    "desc": "Spawns a unit respecting collision. If something blocks the spawn, the unit will be spawned as close to the spawn location as possible. Returns a list whose first entry is the spawned object."
+  },
+  {
+    "name": "Reinforce_Unit",
+    "param": "X = type, Y = position or false, Z = player, U = bool, V = bool (obey_zones)",
+    "desc": "If Y is false, the unit type is added to the reinforcements pool. Returns a CommandBlock."
+  },
+  {
+    "name": ".Result",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Get result of action (e.g. spawned units from Reinforce_Unit)"
+  },
+  {
+    "name": ".IsFinished",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Check if action (e.g. unit movement) has finished"
+  },
+  {
+    "name": ".Is_Valid",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Usually used on game objects to test if they are still in the game"
+  },
+  {
+    "name": "Start_Cinematic_Space_Retreat",
+    "param": "X = number(playerID), Y = number",
+    "desc": "-"
+  },
+  {
+    "name": "End_Cinematic_Mode",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Start_Cinematic_Mode",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Set_Cinematic_Environment",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": "Promote_To_Space_Cinematic_Layer",
+    "param": "X = game object",
+    "desc": "-"
+  },
+  {
+    "name": "Create_Cinematic_Transport",
+    "param": "X = string(object type), Y = number(playerID), Z = position, U = number(angle), V = number(phase), W = number, R = number, S = number, T = hint(?)",
+    "desc": "-"
+  },
+  {
+    "name": "Cinematic_Zoom",
+    "param": "X = number, Y = number",
+    "desc": "-"
+  },
+  {
+    "name": "Transition_To_Tactical_Camera",
+    "param": "X = number(time)",
+    "desc": "-"
+  },
+  {
+    "name": "Transition_Cinematic_Camera_Key",
+    "param": "X = position, Y = time, Z = x coord, U = y coord, V = z coord, W = 0,1, R = game object or 0, S = 0,1, T = 0,1(?)",
+    "desc": "Transition the camera position to a new position. Setting W to 1 switches Y,Z,U from cartesian coordinates to spherical coordinates (Y being the radius and U being the angle in the x-y-plane)."
+  },
+  {
+    "name": "Set_Cinematic_Camera_Key",
+    "param": "X = position, Y = x coord, Z = y coord, U = z coord, V = 0,1, W = game object or 0, R = 0,1, S = 0,1(?)",
+    "desc": "Set a camera position"
+  },
+  {
+    "name": "Transition_Cinematic_Target_Key",
+    "param": "X = position, Y = time, Z = x coord, U = y coord, V = z coord, W = 0,1, R = game object or 0, S = 0,1, T = 0,1(?)",
+    "desc": "Transition the camera target (what the camera is pointing at) to a new position in Y seconds."
+  },
+  {
+    "name": "Set_Cinematic_Target_Key",
+    "param": "X = position, Y = x coord, Z = y coord, U = z coord, V = 0,1, W = game object or 0, R = 0,1, S = 0,1(?)",
+    "desc": "Set a target position for the camera to point at. If W is given, the camera will follow its movements. Without W the parameters R and S(?) won't work. If R is 1, the function uses W's coordinate system."
+  },
+  {
+    "name": "End_Cinematic_Camera",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Start_Cinematic_Camera",
+    "param": "X = bool(default is true)",
+    "desc": "-"
+  },
+  {
+    "name": "Point_Camera_At",
+    "param": "X = game object or position(?)",
+    "desc": "-"
+  },
+  {
+    "name": "Rotate_Camera_To",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Rotate_Camera_By",
+    "param": "X = number, Y = number",
+    "desc": "-"
+  },
+  {
+    "name": "Zoom_Camera",
+    "param": "X = number, Y = number",
+    "desc": "-"
+  },
+  {
+    "name": "Camera_To_Follow",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Scroll_Camera_To",
+    "param": "X = game object or position(?)",
+    "desc": "-"
+  },
+  {
+    "name": "Fade_Screen_Out",
+    "param": "X = number(time)",
+    "desc": "Fade screen into blackness"
+  },
+  {
+    "name": "Fade_Screen_In",
+    "param": "X = number(time)",
+    "desc": "Fade screen back from blackness"
+  },
+  {
+    "name": "Fade_Off",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Turn off blackness from fade"
+  },
+  {
+    "name": "Fade_On",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Make screen black immediately"
+  },
+  {
+    "name": "Letter_Box_Out",
+    "param": "X = number(time)",
+    "desc": "Move black bars at the top and bottom out of the screen"
+  },
+  {
+    "name": "Letter_Box_In",
+    "param": "X = number(time)",
+    "desc": "Move black bars at the top and bottom into the screen"
+  },
+  {
+    "name": "Letter_Box_Off",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Get rid of black bars immediately"
+  },
+  {
+    "name": "Letter_Box_On",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Show black bars immediately"
+  },
+  {
+    "name": "Do_End_Cinematic_Cleanup",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Removes all units not marked by In_End_Cinematic?"
+  },
+  {
+    "name": "Weather_Audio_Pause",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": "Master_Volume_Restore",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Allow_Localized_SFX",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": "SFXManager.Allow_Ambient_VO",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": "SFXManager.Allow_Enemy_Sighted_VO",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": "SFXManager.Allow_HUD_VO",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": "SFXManager.Allow_Unit_Reponse_VO",
+    "param": "X = bool",
+    "desc": "Notice the spelling mistake!"
+  },
+  {
+    "name": "SFXManager.Allow_Localized_SFXEvents",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": "Remove_All_Text",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Stop_All_Speech",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Resume_Mode_Based_Music",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Stop_All_Music",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Play_Music",
+    "param": "X = string",
+    "desc": "-"
+  },
+  {
+    "name": "Stop_Bink_Movie",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Play_Bink_Movie",
+    "param": "X = string",
+    "desc": "-"
+  },
+  {
+    "name": "Set_New_Environment",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Force_Weather",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Turn on weather effects"
+  },
+  {
+    "name": "Enable_Distance_Fog",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Enable_Fog",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": "Play_Lightning_Effect",
+    "param": "X = string(effect), Y = position, Z = position",
+    "desc": "-"
+  },
+  {
+    "name": "GameRandom",
+    "param": "X = integer, Y = integer",
+    "desc": "Returns random integer between X and Y"
+  },
+  {
+    "name": "GameRandom.Get_Float",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns random float between 0 and 1"
+  },
+  {
+    "name": "GameRandom.Get_Float",
+    "param": "X = number, Y = number",
+    "desc": "Returns random float between X and Y"
+  },
+  {
+    "name": "GameRandom.Free_Random",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Create_Thread",
+    "param": "X = function name as string, Y = anything",
+    "desc": "Starts the function X (more precisely, the function at _G[X]) in a new thread on the next frame with parameter Y and returns the thread ID (an integer). If Y is a table, its contents will be copied into a new list which is given to the function, the keys of the original table will be lost."
+  },
+  {
+    "name": "Thread",
+    "param": "X = function name as string, Y = anything",
+    "desc": "Seems to be the same as Create_Thread"
+  },
+  {
+    "name": "Thread.Create",
+    "param": "X = function name as string, Y = anything",
+    "desc": "Seems to be the same as Create_Thread"
+  },
+  {
+    "name": "Thread.Kill",
+    "param": "X = thread ID (integer)",
+    "desc": "Stops the thread with ID X"
+  },
+  {
+    "name": "Create_Thread.Kill",
+    "param": "X = thread ID (integer)",
+    "desc": "-"
+  },
+  {
+    "name": "Thread.Kill_All",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Create_Thread.Kill_All",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Thread.Is_Thread_Active",
+    "param": "X = thread ID (integer)",
+    "desc": "-"
+  },
+  {
+    "name": "Create_Thread.Is_Thread_Active",
+    "param": "X = thread ID (integer)",
+    "desc": "-"
+  },
+  {
+    "name": "Thread.Get_Name",
+    "param": "X = thread ID (integer)",
+    "desc": "Returns the name of the main function (\"main\" or the function name passed to Create_Thread)"
+  },
+  {
+    "name": "Create_Thread.Get_Name",
+    "param": "X = thread ID (integer)",
+    "desc": "-"
+  },
+  {
+    "name": "Thread.Get_Current_ID",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns the ID of the current thread"
+  },
+  {
+    "name": "Create_Thread.Get_Current_ID",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "GlobalValue.Get",
+    "param": "X = string",
+    "desc": "Get the value set for X"
+  },
+  {
+    "name": "GlobalValue.Set",
+    "param": "X = string, Y = value",
+    "desc": "Set a value Y for identifier X. This value is accessible for all lua scripts and can be any variable type except userdata or thread. Can theoretically still be used to access userdata from other scripts, however the game throws an error in that case."
+  },
+  {
+    "name": "ThreadValue",
+    "param": "X = string",
+    "desc": "Get the value set for X"
+  },
+  {
+    "name": "ThreadValue.Get",
+    "param": "X = string",
+    "desc": "Get the value set for X"
+  },
+  {
+    "name": "ThreadValue.Set",
+    "param": "X = string, Y = value",
+    "desc": "Set a value Y for identifier X. This value is specific to a thread as defined by Create_Thread."
+  },
+  {
+    "name": "ThreadValue.Reset",
+    "param": "X = string",
+    "desc": "Sets value for identifier X to nil"
+  },
+  {
+    "name": "DiscreteDistribution.Create",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns a LuaDiscreteDistributionClass object"
+  },
+  {
+    "name": ".Insert",
+    "param": "<code>X</code> = anything?, <code>Y</code> = number",
+    "desc": "-"
+  },
+  {
+    "name": ".Sample",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "WeightedTypeList.Create",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns a WeightedTypeListClass object"
+  },
+  {
+    "name": "EvaluateTypeList",
+    "param": "X = player, Y = game object, Z = weighted type list",
+    "desc": "returns a list"
+  },
+  {
+    "name": ".Parse",
+    "param": "X = list of types(or categories?), Y = list of numbers",
+    "desc": "-"
+  },
+  {
+    "name": "FogOfWar.Reveal_All",
+    "param": "X = player",
+    "desc": "Reveals the entire map for player X"
+  },
+  {
+    "name": "FogOfWar.Reveal",
+    "param": "X = player, Y = position, Z = number(radius)",
+    "desc": "Reveals FoW at Y with radius Z for player X (in some vanilla source scripts a 4th parameter is used, but it doesn't seem to do anything). Returns a LuaFOWCellsClass object that can be used to undo the reveal."
+  },
+  {
+    "name": "FogOfWar.Temporary_Reveal",
+    "param": "X = player, Y = position, Z = number(radius)",
+    "desc": "Reveals FoW at Y with radius Z for player X for about 5 seconds."
+  },
+  {
+    "name": "FogOfWar.Disable_Rendering",
+    "param": "X = bool",
+    "desc": "X = true makes units visible that should be hidden by the Fog of War."
+  },
+  {
+    "name": ".Undo_Reveal",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Story_Event",
+    "param": "X = string, Y = game object?(optional)",
+    "desc": "Trigger a STORY_AI_NOTIFICATION event"
+  },
+  {
+    "name": "Check_Story_Flag",
+    "param": "X = player, Y = string, Z = game object, U = bool",
+    "desc": "Checks if corresponding reward type TRIGGER_AI has fired."
+  },
+  {
+    "name": "Get_Story_Plot",
+    "param": "X = string (story_file_name.xml)",
+    "desc": "Returns the story file as StoryPlotWrapper object. The parameter is case sensitive."
+  },
+  {
+    "name": ".Get_Event",
+    "param": "X = string(Event name)",
+    "desc": "Returns the xml event as StoryEventWrapper object."
+  },
+  {
+    "name": ".Suspend",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Suspends the plot"
+  },
+  {
+    "name": ".Activate",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Activates the plot"
+  },
+  {
+    "name": ".Reset",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Resets all events of the plot"
+  },
+  {
+    "name": ".Set_Reward_Type",
+    "param": "X = string(reward type)",
+    "desc": "-"
+  },
+  {
+    "name": ".Set_Reward_Parameter",
+    "param": "X = number, Y = something that makes sense",
+    "desc": "Sets Reward_Param(X+1) as Y (X is 0 for Reward_Param1)."
+  },
+  {
+    "name": ".Set_Event_Parameter",
+    "param": "X = number, Y = something that makes sense",
+    "desc": "Sets Event_Param(X+1) as Y (X is 0 for Event_Param1)."
+  },
+  {
+    "name": ".Set_Dialog",
+    "param": "X = string(dialog file name)",
+    "desc": "Sets the dialog file."
+  },
+  {
+    "name": ".Clear_Dialog_Text",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Add_Dialog_Text",
+    "param": "X = string(text identifier from dat file)",
+    "desc": "The text will be formatted with any additional parameters given."
+  },
+  {
+    "name": ".Despawn",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Removes the object from the game"
+  },
+  {
+    "name": ".Get_Planet_Location",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns the planet object (GC only)"
+  },
+  {
+    "name": ".Move_To",
+    "param": "X = Object or Position",
+    "desc": "Moves the Object to X, returns a UnitMovementBlockStatus object"
+  },
+  {
+    "name": ".Move_To",
+    "param": "X = Unit_List, Y = Object",
+    "desc": "Moves Unit_List to Y in formation (does Object have to be contained in X?), returns a UnitMovementBlockStatus object"
+  },
+  {
+    "name": ".Attack_Move",
+    "param": "X = Object/Position",
+    "desc": "Returns a UnitMovementBlockStatus object"
+  },
+  {
+    "name": ".Attack_Move",
+    "param": "X = Unit_List, Y = Object/Position",
+    "desc": "Returns a UnitMovementBlockStatus object"
+  },
+  {
+    "name": ".Attack_Target",
+    "param": "X = Object",
+    "desc": "Attack X, returns a UnitMovementBlockStatus object"
+  },
+  {
+    "name": ".Attack_Target",
+    "param": "X = Unit_List, Y = Object",
+    "desc": "Attack Y with Unit_List (does the object have to be part of Unit_List?), returns a UnitMovementBlockStatus object"
+  },
+  {
+    "name": ".Guard_Target",
+    "param": "X = PositionsObject",
+    "desc": "Returns a UnitMovementBlockStatus object"
+  },
+  {
+    "name": ".Guard_Target",
+    "param": "X = Unit_List, Y = Object",
+    "desc": "Guard Y with Unit_List (does the object have to be part of Unit_List?), returns a UnitMovementBlockStatus object"
+  },
+  {
+    "name": ".Can_Move",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns true if the unit can currently move (is false e.g. during hyperspace in)"
+  },
+  {
+    "name": ".Stop",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Stops the unit"
+  },
+  {
+    "name": ".Suspend_Locomotor",
+    "param": "X = true / false",
+    "desc": "movability on or off"
+  },
+  {
+    "name": ".Get_Position",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns Position of the Object"
+  },
+  {
+    "name": ".Enable_Behavior",
+    "param": "X = Number of behavior, Y = true / false",
+    "desc": "Enables specific behavior"
+  },
+  {
+    "name": ".Activate_Ability",
+    "param": "X = AbilityName (string), Y = true / false",
+    "desc": "Activates untargeted ability"
+  },
+  {
+    "name": ".Activate_Ability",
+    "param": "X = AbilityName (string), Y = Object or location",
+    "desc": "Activates targeted ability"
+  },
+  {
+    "name": ".Reset_Ability_Counter",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Finishes ability cooldown"
+  },
+  {
+    "name": ".Set_Single_Ability_Autofire",
+    "param": "X = AbilityName (string), Y = true / false",
+    "desc": "-"
+  },
+  {
+    "name": ".Set_All_Abilities_Autofire",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": ".Is_Ability_Autofire",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Is_Ability_Active",
+    "param": "X = AbilityName (string)",
+    "desc": "Returns true or false"
+  },
+  {
+    "name": ".Is_Ability_Ready",
+    "param": "X = AbilityName (string)",
+    "desc": "Returns true or false"
+  },
+  {
+    "name": ".Has_Ability",
+    "param": "X = AbilityName (string)",
+    "desc": "Returns true or false"
+  },
+  {
+    "name": ".Force_Ability_Recharge",
+    "param": "X = string, Y = number(optional)",
+    "desc": "-"
+  },
+  {
+    "name": ".Cancel_Ability",
+    "param": "X = string(ability)",
+    "desc": "-"
+  },
+  {
+    "name": ".Take_Damage",
+    "param": "X = Damage points",
+    "desc": "-"
+  },
+  {
+    "name": "-",
+    "param": "Y(optional) = Hardpoint(string)",
+    "desc": "-"
+  },
+  {
+    "name": ".Are_Engines_Online",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns true or false"
+  },
+  {
+    "name": ".Override_Max_Speed",
+    "param": "X = number",
+    "desc": "-"
+  },
+  {
+    "name": ".Cinematic_Hyperspace_In",
+    "param": "X = integer (number of frames)",
+    "desc": "Makes unit hyperspace into battle with delay by X frames (spawning many units with different delays at the same time seems spawns all units with the same delay anyway)"
+  },
+  {
+    "name": ".Hyperspace_Away",
+    "param": "X = true/false (default is true)",
+    "desc": "Makes unit leave into hyperspace. If X is true, the unit gets deleted from GC"
+  },
+  {
+    "name": ".Cancel_Hyperspace",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Prevent_AI_Usage",
+    "param": "X = true / false",
+    "desc": "Allow or prevent AI usage. In tactical battles this crashes the game if the unit has no active AI! When the factions AI changes, the unit is AI usable again."
+  },
+  {
+    "name": ".Hide",
+    "param": "X = true / false",
+    "desc": "(Un)Hides the object"
+  },
+  {
+    "name": ".Play_Animation",
+    "param": "X = Animation name (string)",
+    "desc": "-"
+  },
+  {
+    "name": "-",
+    "param": "Y = bool",
+    "desc": "-"
+  },
+  {
+    "name": "-",
+    "param": "Z = integer",
+    "desc": "-"
+  },
+  {
+    "name": ".Change_Owner",
+    "param": "X = PlayerObject",
+    "desc": "Sets objects owner to new faction"
+  },
+  {
+    "name": ".In_End_Cinematic",
+    "param": "X = true / false",
+    "desc": "Shall object be displayed in Cinematic?"
+  },
+  {
+    "name": ".Teleport",
+    "param": "X = PositionsObject",
+    "desc": "Teleport object to X"
+  },
+  {
+    "name": ".Teleport_And_Face",
+    "param": "X = Object",
+    "desc": "Teleport object to X and make it face the same way as X"
+  },
+  {
+    "name": ".Face_Immediate",
+    "param": "X = PositionsObject",
+    "desc": "Make unit face toward X immediately"
+  },
+  {
+    "name": ".Turn_To_Face",
+    "param": "X = PositionsObject",
+    "desc": "Make unit turn to face toward X"
+  },
+  {
+    "name": ".Prevent_Opportunity_Fire",
+    "param": "X = true / false",
+    "desc": "Prevent automatically firing at targets in range"
+  },
+  {
+    "name": ".Prevent_All_Fire",
+    "param": "X = true / false",
+    "desc": "Completely prevent a unit from firing"
+  },
+  {
+    "name": ".Make_Invulnerable",
+    "param": "X = true / false",
+    "desc": "Stops object from taking any damage"
+  },
+  {
+    "name": ".Set_Check_Contested_Space",
+    "param": "X = true / false",
+    "desc": "Make the unit/fleet not trigger space tactical battles?"
+  },
+  {
+    "name": ".Get_Parent_Object",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "For fleets this is a PlanetObject, for units in GC it's the fleet, for ground forces it's the transport?, for fighters it's the squadron"
+  },
+  {
+    "name": ".Lock_Current_Orders",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Only for units belonging to AI players"
+  },
+  {
+    "name": ".Unlock_Current_Orders",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Only for units belonging to AI players"
+  },
+  {
+    "name": ".Is_In_Asteroid_Field",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Is_In_Ion_Storm",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Is_In_Nebula",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Type",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns the unit's type (GameObjectTypeWrapper object)"
+  },
+  {
+    "name": ".Is_Corrupted",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Use on planets"
+  },
+  {
+    "name": ".Enable_Dynamic_LOD",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": ".Invade",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Only for fleets with land units in orbit over an enemy planet (is used in FoC campaign but doesn't seem to work in regular GC)"
+  },
+  {
+    "name": ".Set_In_Limbo",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_All_Projectile_Types",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns a list of the projectile types (GameObjectTypeWrappers) the unit uses"
+  },
+  {
+    "name": ".Is_Selectable",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Current_Projectile_Type",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns the projectile type the unit is currently using"
+  },
+  {
+    "name": ".Should_Switch_Weapons",
+    "param": "X = game object or ai target",
+    "desc": "Returns true if alternate weaponry of the unit is better against (?) X"
+  },
+  {
+    "name": ".Is_Good_Against",
+    "param": "X = game object or ai target",
+    "desc": "-"
+  },
+  {
+    "name": ".Is_In_Garrison",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Is the unit garrisoned"
+  },
+  {
+    "name": ".Get_Garrisoned_Units",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns a list of units garrisoned inside the object"
+  },
+  {
+    "name": ".Has_Garrison",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns true if the object contains any garrisoned units"
+  },
+  {
+    "name": ".Eject_Garrison",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Eject all garrisoned units"
+  },
+  {
+    "name": ".Leave_Garrison",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Make a garrisoned unit leave its garrison"
+  },
+  {
+    "name": ".Can_Garrison_Fire",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Can_Garrison",
+    "param": "X = game object or ai target",
+    "desc": "Can the unit be garrisoned in X?"
+  },
+  {
+    "name": ".Garrison",
+    "param": "X = game object or ai target",
+    "desc": "Garrison the unit in X"
+  },
+  {
+    "name": ".Get_Attack_Target",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Can_Land_On_Planet",
+    "param": "X = game object (planet)",
+    "desc": "Can the unit land on planet X?"
+  },
+  {
+    "name": ".Get_Is_Planet_AI_Usable",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Can only be used on planets"
+  },
+  {
+    "name": ".Play_Cinematic_Engine_Flyby",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Stop_SFX_Event",
+    "param": "X = string, Y = number(optional)",
+    "desc": "-"
+  },
+  {
+    "name": ".Attach_Particle_Effect",
+    "param": "X = type or type name, y = string(optional)",
+    "desc": "-"
+  },
+  {
+    "name": ".Has_Attack_Target",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Show_Emitter",
+    "param": "X = string(emitter), Y = bool",
+    "desc": "-"
+  },
+  {
+    "name": ".Highlight_Small",
+    "param": "X = bool, Y = number(optional)",
+    "desc": "Put a small arrow highlight on top of the object"
+  },
+  {
+    "name": ".Highlight",
+    "param": "X = bool, Y = number(optional)",
+    "desc": "Put an arrow highlight on top of the object"
+  },
+  {
+    "name": ".Explore_Area",
+    "param": "X = ai target location",
+    "desc": "-"
+  },
+  {
+    "name": ".Disable_Capture",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": ".Force_Test_Space_Conflict",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Enforce check if a space battle should be initiated, e.g. after spawning a fleet at an enemy planet (only works on fleets and planets)"
+  },
+  {
+    "name": ".Play_SFX_Event",
+    "param": "X = string, Y = number(optional)",
+    "desc": "-"
+  },
+  {
+    "name": ".Set_Cannot_Be_Killed",
+    "param": "X = bool",
+    "desc": "Keep a unit from dying (it can still be damaged)"
+  },
+  {
+    "name": ".Get_Hint",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Set_Garrison_Spawn",
+    "param": "X = bool",
+    "desc": "Turn spawn of garrison units on/off"
+  },
+  {
+    "name": ".Fire_Tactical_Superweapon",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Fire death star in tactical"
+  },
+  {
+    "name": ".Is_Tactical_Superweapon_Ready",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Test if death star is ready to fire"
+  },
+  {
+    "name": ".Get_Bone_Position",
+    "param": "X = string(bone name)",
+    "desc": "-"
+  },
+  {
+    "name": ".Lock_Build_Pad_Contents",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": ".Is_Planet_Destroyed",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Affiliated_Indigenous_Type",
+    "param": "X = player",
+    "desc": "Use on planets. Returns the indigenous unit type of that planet affiliated with X"
+  },
+  {
+    "name": ".Is_On_Diversion",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Has_Property",
+    "param": "X = string(property flag)",
+    "desc": "-"
+  },
+  {
+    "name": ".Destroy_Contained_Objects",
+    "param": "X = number",
+    "desc": "Only use on fleets"
+  },
+  {
+    "name": ".Contains_Object_Type",
+    "param": "X = game object type",
+    "desc": "Only use on fleets"
+  },
+  {
+    "name": ".Get_Contained_Object_Count",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Only use on fleets"
+  },
+  {
+    "name": ".Has_Active_Orders",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_AI_Power_Vs_Unit",
+    "param": "X = game object",
+    "desc": "(tactical only)"
+  },
+  {
+    "name": ".Divert",
+    "param": "X = object or position, Y = number(optional)",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Next_Starbase_Type",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Use on planets"
+  },
+  {
+    "name": ".Mark_Parent_Mode_Object_For_Death",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Use in tactical. This kills the corresping GC object"
+  },
+  {
+    "name": ".Set_Importance",
+    "param": "X = number",
+    "desc": "-"
+  },
+  {
+    "name": ".Service_Wrapper",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Cancel_Event_Object_In_Range",
+    "param": "X = function",
+    "desc": "-"
+  },
+  {
+    "name": ".Event_Object_In_Range",
+    "param": "X = function, Y = number(distance), Z = player(optional)",
+    "desc": "Calls X(self, trigger_object) continually for each trigger_object affiliated with Z in range"
+  },
+  {
+    "name": ".Get_Final_Blow_Player",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Used on planets, returns a player"
+  },
+  {
+    "name": ".Get_Starbase_Level",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Only used on planets(?)"
+  },
+  {
+    "name": ".Get_Owner",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Sell",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Possibly only for build pad contents"
+  },
+  {
+    "name": ".Get_Build_Pad_Contents",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Use on build pads or MDUs"
+  },
+  {
+    "name": ".Get_Distance",
+    "param": "X = position",
+    "desc": "Returns a number"
+  },
+  {
+    "name": ".Get_Contained_Heroes",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Only for fleets?"
+  },
+  {
+    "name": ".Contains_Hero",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Only for fleets"
+  },
+  {
+    "name": ".Fire_Special_Weapon",
+    "param": "X = game object(target), Y = player(user)",
+    "desc": "Use on space station apparently"
+  },
+  {
+    "name": ".Get_Rate_Of_Damage_Taken",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Time_Till_Dead",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Set_Targeting_Stickiness_Time_Threshold",
+    "param": "X = number",
+    "desc": "-"
+  },
+  {
+    "name": ".Set_Targeting_Priorities",
+    "param": "X = string(targeting priority set)",
+    "desc": "-"
+  },
+  {
+    "name": ".Set_Prefer_Ground_Over_Space",
+    "param": "X = bool",
+    "desc": "Obeject needs UNIT_AI behavior"
+  },
+  {
+    "name": ".Get_Game_Scoring_Type",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Is_Category",
+    "param": "X = string(category name)",
+    "desc": "Can use pipe to concatenate categories"
+  },
+  {
+    "name": ".Get_Shield",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Normalized wrt total shield points (i.e. returns number between 0 and 1)"
+  },
+  {
+    "name": ".Get_Energy",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Normalized wrt units total energy"
+  },
+  {
+    "name": ".Get_Health",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Normalized wrt units total health"
+  },
+  {
+    "name": ".Get_Hull",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Normalized wrt units total health (apparently the same as Get_Health)"
+  },
+  {
+    "name": ".Is_Transport",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Use in galactic"
+  },
+  {
+    "name": ".Release",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Build",
+    "param": "X = type or type name, Y = bool(optional)?",
+    "desc": "Use on buildpads and MDUs"
+  },
+  {
+    "name": ".Get_Name",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns the name of the game object type (the xml name)"
+  },
+  {
+    "name": ".Get_Combat_Rating",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns the AI_Combat_Power"
+  },
+  {
+    "name": ".Is_Hero",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns true/false"
+  },
+  {
+    "name": ".Get_Build_Cost",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns build cost"
+  },
+  {
+    "name": ".Get_Tech_Level",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns required tech level"
+  },
+  {
+    "name": ".Get_Base_Level",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns level of a starbase type"
+  },
+  {
+    "name": ".Is_Affiliated_With",
+    "param": "X = player",
+    "desc": "-"
+  },
+  {
+    "name": ".Is_Build_Locked",
+    "param": "X = player",
+    "desc": "-"
+  },
+  {
+    "name": ".Is_Obsolete",
+    "param": "X = player",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Tactical_Build_Cost",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Score_Cost_Credits",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Max_Range",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Min_Range",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Bribe_Cost",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Is_Affected_By_Missile_Shield",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "This is used only for projectile types"
+  },
+  {
+    "name": ".Is_Affected_By_Laser_Defense",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "This is used only for projectile types"
+  },
+  {
+    "name": ".Enable_Advisor_Hints",
+    "param": "X = \"space\" or \"ground\"",
+    "desc": "Enables Advisor Hints"
+  },
+  {
+    "name": "-",
+    "param": "Y = true / false",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_ID",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "returns ID of PlayerObject"
+  },
+  {
+    "name": ".Get_Enemy",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns an enemy player (I suspect it only ever returns Rebel or Empire, in any case there is not much point using it outside the base EaW though it might be related to the Primary Enemy tag)"
+  },
+  {
+    "name": ".Select_Object",
+    "param": "X = Object",
+    "desc": "Forces player to select object"
+  },
+  {
+    "name": ".Enable_As_Actor",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Activates the AI for that player"
+  },
+  {
+    "name": ".Retreat",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Enables retreat event"
+  },
+  {
+    "name": ".Get_Name",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "returns the displayed faction name"
+  },
+  {
+    "name": ".Get_Faction_Name",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "returns xml faction name"
+  },
+  {
+    "name": ".Get_Tech_Level",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Is_Human",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Give_Random_Sliceable_Tech",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Give_Money",
+    "param": "X = amount (integer/float?)",
+    "desc": "-"
+  },
+  {
+    "name": ".Make_Ally",
+    "param": "X = player",
+    "desc": "Gets reset with any game mode changes, in particular at the end of every tactical battle!"
+  },
+  {
+    "name": ".Make_Enemy",
+    "param": "X = player",
+    "desc": "Gets reset with any game mode changes, in particular at the end of every tactical battle!"
+  },
+  {
+    "name": ".Get_Space_Station",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns the player's space station in space tactical"
+  },
+  {
+    "name": ".Get_Team",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Team ID in skirmish"
+  },
+  {
+    "name": ".Get_Clan_ID",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Clan ID in skirmish"
+  },
+  {
+    "name": ".Remove_Orbital_Bombardment",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": ".Disable_Orbital_Bombardment",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": ".Set_Sabotage_Tutorial",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": ".Set_Black_Market_Tutorial",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Difficulty",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns \"Easy\", \"Normal\" or \"Hard\""
+  },
+  {
+    "name": ".Disable_Bombing_Run",
+    "param": "X = bool",
+    "desc": "X = false disables bombing run for the given faction in ground tactical, X = true enables it"
+  },
+  {
+    "name": ".Is_Ally",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Is_Enemy",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Unlock_Tech",
+    "param": "X = GameObjectTypeWrapper",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_GameSpy_Stats_Player_ID",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Credits",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Release_Credits_For_Tactical",
+    "param": "X = Number (optional?)",
+    "desc": "For AI player (with galactic AI) only. Releases credits for spending in (land only?) mode."
+  },
+  {
+    "name": ".Set_Tech_Level",
+    "param": "X = Number",
+    "desc": "-"
+  },
+  {
+    "name": "Evaluate_In_Galactic_Context",
+    "param": "X = string(perception)",
+    "desc": "For tactical battle. Evaluates the perception at GC level."
+  },
+  {
+    "name": "Apply_Markup",
+    "param": "X = player, Y = list, Z = number, U = ?",
+    "desc": "-"
+  },
+  {
+    "name": "Purge_Goals",
+    "param": "X = player",
+    "desc": "-"
+  },
+  {
+    "name": "GiveDesireBonus",
+    "param": "X = player, Y = string(goal(set?)), Z = ai target, U = number, V = number",
+    "desc": "-"
+  },
+  {
+    "name": "EvaluatePerception",
+    "param": "X = string(perception), Y = player, Z = game object/ai target",
+    "desc": "Evaluates a perception and returns the result. Y and Z are needed if and only if the perception uses Variable_Self and Variable_Target, respectively."
+  },
+  {
+    "name": "_FindStageArea",
+    "param": "X = player, Y = game object/ai target, Z = taskforce",
+    "desc": "Deprecated but may still work as intended"
+  },
+  {
+    "name": "_ProduceObject",
+    "param": "X = player, Y = game object type (name?), Z = planet/ ai target",
+    "desc": "Deprecated but may still work as intended"
+  },
+  {
+    "name": "FindTarget",
+    "param": "X = taskforce, Y = perception, Z = goal application flag, U = number(probability), V = number(range)",
+    "desc": "Find a target for a taskforce. Tries to find the one that the perception returns the highest value on."
+  },
+  {
+    "name": "FindTarget.Reachable_Target",
+    "param": "X = player, Y = perception, Z = goal application, U = reachability, V = probability, W = ai target, R = range",
+    "desc": "Find a target for an aiplayer. Tries to find the one that the perception returns the highest value on."
+  },
+  {
+    "name": "FindTarget.Best_Of",
+    "param": "X = taskforce, Y = list of game objects/ai targets, Z = string(perception?)",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Game_Object",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Returns corresponding game object if there is one (e.g. a targeted unit or planet)."
+  },
+  {
+    "name": ".Get_Distance",
+    "param": "X = position",
+    "desc": "-"
+  },
+  {
+    "name": "FreeStore.Is_Object_On_Free_Store",
+    "param": "X = game object",
+    "desc": "-"
+  },
+  {
+    "name": "FreeStore.Get_Object_Count",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "FreeStore.Is_Unit_Safe",
+    "param": "X = game object",
+    "desc": "GC only(?)"
+  },
+  {
+    "name": "FreeStore.Is_Unit_In_Transit",
+    "param": "X = game object",
+    "desc": "GC only(?)"
+  },
+  {
+    "name": "FreeStore.Move_Object",
+    "param": "X = game object, Y = planet",
+    "desc": "GC only(?)"
+  },
+  {
+    "name": ".Get_Goal_Type_Name",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Test_Target_Contrast",
+    "param": "X = bool",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Self_Threat_Sum",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Self_Threat_Max",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_Unit_Table",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Clear_Opportunity_Fire_Event_Subscriptions",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Remove_Opportunity_Fire_Event_Subscription",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Add_Opportunity_Fire_Event_Subscription",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Set_Plan_Result",
+    "param": "X = bool",
+    "desc": "Sets plan to successful (true) or failed (false)"
+  },
+  {
+    "name": ".Are_All_Units_On_Free_Store",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Check if all required units are available in the freestore"
+  },
+  {
+    "name": ".Get_Stage",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Unblock_Goal_Proposal",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Block_Goal_Proposal",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Collect_All_Free_Units",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Add all units from the freestore to the taskforce"
+  },
+  {
+    "name": ".Release_Unit",
+    "param": "X = game object",
+    "desc": "-"
+  },
+  {
+    "name": ".Withdraw_Units",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Retreat"
+  },
+  {
+    "name": ".Release_Forces",
+    "param": "0 < X < 1.0",
+    "desc": "-"
+  },
+  {
+    "name": ".Set_As_Goal_System_Removable",
+    "param": "X = bool",
+    "desc": "(Dis)allow hardcoded AI systems to terminate the goal (and plan)"
+  },
+  {
+    "name": ".Get_Force_Count",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Produce_Force",
+    "param": "X = stage(optional), Y = bool(optional)",
+    "desc": "Assemble the taskforce a the given stage by building units or collecting them from the freestore"
+  },
+  {
+    "name": ".Form_Units",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Forms a fleet object with the taskforces units"
+  },
+  {
+    "name": ".Add_Force",
+    "param": "X = game object",
+    "desc": "Adds a unit to the taskforce"
+  },
+  {
+    "name": ".Get_Type_Of_Unit",
+    "param": "X = number(index)",
+    "desc": "-"
+  },
+  {
+    "name": ".Leave_Garrison",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Can_Garrison",
+    "param": "X = game object",
+    "desc": "-"
+  },
+  {
+    "name": ".Garrison",
+    "param": "X = game object",
+    "desc": "-"
+  },
+  {
+    "name": ".Set_All_Abilities_Autofire",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": ".Set_Single_Ability_Autofire",
+    "param": "X = string(ability name), Y = bool",
+    "desc": "-"
+  },
+  {
+    "name": ".Get_AI_Power_Vs_Unit",
+    "param": "X = game object",
+    "desc": "-"
+  },
+  {
+    "name": ".Set_Targeting_Stickiness_Time_Threshold",
+    "param": "X = number",
+    "desc": "-"
+  },
+  {
+    "name": ".Set_Targeting_Priorities",
+    "param": "X = string(targeting priority set)",
+    "desc": "-"
+  },
+  {
+    "name": ".Move_To",
+    "param": "X = game object/position",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Attack_Move",
+    "param": "X = game object/position, Y = number(threat)(optional), Z = string(space fields)(optional)",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Guard_Target",
+    "param": "X = game object/taskforce, Y = number(threat)(optional), Z = string(space fields)(optional)",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Attack_Target",
+    "param": "X = game object, Y = number(threat)(optional), Z = string(space fields)(optional)",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Attack_Target",
+    "param": "X = game object, Y = string (hardpoint type), Z = number (threat?)(optional?)",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Release_Reinforcements",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Get_Reserved_Build_Pads",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Build_All",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Reinforce",
+    "param": "X = position, Y = number(optional)",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Prepare_Ambush",
+    "param": "X = position, Y = string(back, front, right, left?), Z = number>0, U = number, V = bool?",
+    "desc": "Tactical only (not used)"
+  },
+  {
+    "name": ".Find_Closest_Enemy",
+    "param": "X = string, Y = ?(optional)",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Enable_Attack_Positioning",
+    "param": "X = bool",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Explore_Area",
+    "param": "X = ai target location",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Get_Distance",
+    "param": "X = position",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Fire_Special_Weapon",
+    "param": "X = string, Y = ai target/game object",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Build",
+    "param": "X = string, Y = game object(build pad)",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Activate_Ability",
+    "param": "X = string(ability name), Y = bool",
+    "desc": "Tactical only"
+  },
+  {
+    "name": ".Fire_Orbital_Bombardment",
+    "param": "X = position",
+    "desc": "Land only"
+  },
+  {
+    "name": ".Bombing_Run",
+    "param": "X = ai target or game object",
+    "desc": "Land only"
+  },
+  {
+    "name": ".Move_To",
+    "param": "X = game object(planet)",
+    "desc": "GC only"
+  },
+  {
+    "name": ".Activate_Ability",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "GC only"
+  },
+  {
+    "name": ".Raid",
+    "param": "X = game object(planet)",
+    "desc": "GC only"
+  },
+  {
+    "name": ".Is_Raid_Capable",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "GC only"
+  },
+  {
+    "name": ".Refit_To_Definition",
+    "param": "X = game object(planet)",
+    "desc": "GC only"
+  },
+  {
+    "name": ".Launch_Units",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Launches (land) units into orbit. GC only"
+  },
+  {
+    "name": ".Land_Units",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Lands units on a planet. GC only"
+  },
+  {
+    "name": ".Invade",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "Starts a ground invasion (seems to require very specific circumstances to work) GC only"
+  },
+  {
+    "name": ".Force_Test_Space_Conflict",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "GC only"
+  },
+  {
+    "name": "Budget.Flush_Category",
+    "param": "X = string(goal category)",
+    "desc": "-"
+  },
+  {
+    "name": "Budget.Flush_All_Resources",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Budget.Flush_Unallocated_Resources",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Budget.Take_Resources_From_Goal",
+    "param": "X = number>0, Y = string",
+    "desc": "-"
+  },
+  {
+    "name": "Budget.Give_Resources_To_Goal",
+    "param": "X = number>0, Y = string",
+    "desc": "-"
+  },
+  {
+    "name": "Budget.Wait_For_Unallocated_Resources",
+    "param": "X = number",
+    "desc": "-"
+  },
+  {
+    "name": "Budget.Wait_For_Spendable_Resources",
+    "param": "X = number",
+    "desc": "-"
+  },
+  {
+    "name": "Budget.Allocate_Resources",
+    "param": "X = number",
+    "desc": "-"
+  },
+  {
+    "name": "Budget.Get_Spendable_Resources",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Budget.Get_Unallocated_Resources",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  },
+  {
+    "name": "Script.Debug_Should_Issue_Event_Alert",
+    "param": "<nowiki>-</nowiki>",
+    "desc": "-"
+  }
+]

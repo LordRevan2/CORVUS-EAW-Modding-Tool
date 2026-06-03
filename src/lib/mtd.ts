@@ -37,11 +37,11 @@ export function parseMtd(buffer: ArrayBuffer): MtdIcon[] {
       nameStr = nameStr.substring(0, nullIdx);
     }
     
-    // Read 4 x uint32 for X, Y, Width, Height
-    const x = dt.getUint32(offset, true); offset += 4;
-    const y = dt.getUint32(offset, true); offset += 4;
-    const width = dt.getUint32(offset, true); offset += 4;
-    const height = dt.getUint32(offset, true); offset += 4;
+    // Read 4 x uint32 for X1, Y1, X2, Y2
+    const x1 = dt.getUint32(offset, true); offset += 4;
+    const y1 = dt.getUint32(offset, true); offset += 4;
+    const x2 = dt.getUint32(offset, true); offset += 4;
+    const y2 = dt.getUint32(offset, true); offset += 4;
     
     // Read 1 x uint8 for alpha / flag
     const alphaByte = dt.getUint8(offset); offset += 1;
@@ -49,7 +49,10 @@ export function parseMtd(buffer: ArrayBuffer): MtdIcon[] {
     icons.push({
       id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
       name: nameStr.toUpperCase(),
-      x, y, width, height,
+      x: x1, 
+      y: y1, 
+      width: x2 - x1, 
+      height: y2 - y1,
       alpha: alphaByte !== 0
     });
   }
@@ -104,8 +107,8 @@ export function serializeMtd(icons: MtdIcon[]): ArrayBuffer {
     
     dt.setUint32(offset, Math.round(Math.max(0, icon.x)), true); offset += 4;
     dt.setUint32(offset, Math.round(Math.max(0, icon.y)), true); offset += 4;
-    dt.setUint32(offset, Math.round(Math.max(0, icon.width)), true); offset += 4;
-    dt.setUint32(offset, Math.round(Math.max(0, icon.height)), true); offset += 4;
+    dt.setUint32(offset, Math.round(Math.max(0, icon.x + icon.width)), true); offset += 4;
+    dt.setUint32(offset, Math.round(Math.max(0, icon.y + icon.height)), true); offset += 4;
     dt.setUint8(offset, icon.alpha ? 1 : 0); offset += 1;
   }
   

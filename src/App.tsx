@@ -14,7 +14,10 @@ import ManualModal from './components/ManualModal';
 import DatEditor from './components/DatEditor';
 import MtdEditor from './components/MtdEditor';
 import StoryEditor from './components/StoryEditor';
+import XmlEditor from './components/XmlEditor';
+import LuaEditor from './components/LuaEditor';
 import UpdaterUI from './components/UpdaterUI';
+import UnitEditor from './components/UnitEditor';
 import { parseDatFile, DatRecord } from './lib/dat';
 import { parseMtd, MtdIcon } from './lib/mtd';
 import { I18nProvider, useTranslation, useLanguage } from './i18n';
@@ -47,16 +50,30 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
   const [storyEvents, setStoryEvents] = useState<StoryEvent[] | null>(null);
   const [storyFileName, setStoryFileName] = useState<string>('Story.xml');
 
+  const [rawXmlContent, setRawXmlContent] = useState<string | null>(null);
+  const [rawXmlFileName, setRawXmlFileName] = useState<string>('Generic.xml');
+
+  const [rawLuaContent, setRawLuaContent] = useState<string | null>(null);
+  const [rawLuaFileName, setRawLuaFileName] = useState<string>('Script.lua');
+
+  const [unitDoc, setUnitDoc] = useState<XMLDocument | null>(null);
+  const [unitFileName, setUnitFileName] = useState<string>('Units.xml');
+
   const [workspaceFiles, setWorkspaceFiles] = useState<File[]>([]);
   const [selectedDatPath, setSelectedDatPath] = useState<string>('');
   const [selectedMtdPath, setSelectedMtdPath] = useState<string>('');
   const [selectedStoryPath, setSelectedStoryPath] = useState<string>('');
+  const [selectedXmlPath, setSelectedXmlPath] = useState<string>('');
+  const [selectedUnitPath, setSelectedUnitPath] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const trFileInputRef = useRef<HTMLInputElement>(null);
   const datFileInputRef = useRef<HTMLInputElement>(null);
   const mtdFileInputRef = useRef<HTMLInputElement>(null);
   const storyFileInputRef = useRef<HTMLInputElement>(null);
+  const xmlFileInputRef = useRef<HTMLInputElement>(null);
+  const luaFileInputRef = useRef<HTMLInputElement>(null);
+  const unitFileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   
   const lang = useLanguage();
@@ -372,6 +389,159 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
     if (storyFileInputRef.current) storyFileInputRef.current.value = '';
   };
 
+  const loadXmlFromWorkspace = async (path: string) => {
+    const xmlFile = workspaceFiles.find(f => f.webkitRelativePath === path || f.name === path);
+    if (!xmlFile) return;
+    try {
+        const content = await readFileAsText(xmlFile);
+        setRawXmlContent(content);
+        setRawXmlFileName(xmlFile.name);
+    } catch (err: any) {
+        setError(err.message || 'Error parsing XML');
+    }
+  };
+
+  const loadUnitFromWorkspace = async (path: string) => {
+    const xmlFile = workspaceFiles.find(f => f.webkitRelativePath === path || f.name === path);
+    if (!xmlFile) return;
+    try {
+        const content = await readFileAsText(xmlFile);
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(content, "application/xml");
+        const errorNode = doc.querySelector("parsererror");
+        if (errorNode) throw new Error("Invalid XML structure");
+        setUnitDoc(doc);
+        setUnitFileName(xmlFile.name);
+    } catch (err: any) {
+        setError(err.message || 'Error parsing XML');
+    }
+  };
+
+  const handleUnitUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(content, "application/xml");
+        const errorNode = doc.querySelector("parsererror");
+        if (errorNode) throw new Error("Invalid XML structure");
+        setUnitDoc(doc);
+        setUnitFileName(file.name);
+      } catch (err: any) {
+        setError(err.message || 'Error processing XML.');
+      }
+    };
+    reader.onerror = () => setError('Error reading XML');
+    reader.readAsText(file);
+    
+    if (unitFileInputRef.current) unitFileInputRef.current.value = '';
+  };
+
+  const handleXmlUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        setRawXmlContent(content);
+        setRawXmlFileName(file.name);
+      } catch (err: any) {
+        setError(err.message || 'Error processing XML.');
+      }
+    };
+    reader.onerror = () => setError('Error reading XML');
+    reader.readAsText(file);
+    
+    if (xmlFileInputRef.current) xmlFileInputRef.current.value = '';
+  };
+
+  const handleCreateNewXml = () => {
+    setError(null);
+    try {
+      const emptyXml = `<?xml version="1.0" encoding="utf-8"?>\n<Root>\n\n</Root>`;
+      setRawXmlContent(emptyXml);
+      setRawXmlFileName('Generic.xml');
+    } catch (err: any) {
+      setError(err.message || 'Error creating XML');
+    }
+  };
+
+  const handleSaveRawXml = (content: string, fileName: string) => {
+    const blob = new Blob([content], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const loadLuaFromWorkspace = async (path: string) => {
+    const luaFile = workspaceFiles.find(f => f.webkitRelativePath === path || f.name === path);
+    if (!luaFile) return;
+    try {
+        const content = await readFileAsText(luaFile);
+        setRawLuaContent(content);
+        setRawLuaFileName(luaFile.name);
+    } catch (err: any) {
+        setError(err.message || 'Error parsing LUA');
+    }
+  };
+
+  const handleLuaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        setRawLuaContent(content);
+        setRawLuaFileName(file.name);
+      } catch (err: any) {
+        setError(err.message || 'Error processing LUA.');
+      }
+    };
+    reader.onerror = () => setError('Error reading LUA');
+    reader.readAsText(file);
+    
+    if (luaFileInputRef.current) luaFileInputRef.current.value = '';
+  };
+
+  const handleCreateNewLua = () => {
+    setError(null);
+    try {
+      const emptyLua = `-- New Lua script\n\nrequire("PGStateMachine")\nrequire("PGStoryMode")\n`;
+      setRawLuaContent(emptyLua);
+      setRawLuaFileName('Script.lua');
+    } catch (err: any) {
+      setError(err.message || 'Error creating LUA');
+    }
+  };
+
+  const handleSaveRawLua = (content: string, fileName: string) => {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleCreateNewStory = () => {
     setError(null);
     try {
@@ -569,28 +739,6 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
         </div>
 
         <div className="flex items-center gap-4">
-          <input
-            type="file"
-            accept=".xml"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-          />
-          <input
-            type="file"
-            accept=".xml"
-            className="hidden"
-            ref={trFileInputRef}
-            onChange={handleTradeRoutesUpload}
-          />
-          <input
-            type="file"
-            accept=".dat"
-            className="hidden"
-            ref={datFileInputRef}
-            onChange={handleDatFileUpload}
-          />
-          
           <button 
             onClick={() => setIsSettingsOpen(true)}
             className="w-8 h-8 flex items-center justify-center border border-slate-700/50 hover:border-cyan-500/50 hover:bg-cyan-500/15 text-slate-300 hover:text-cyan-400 transition-all duration-200 group rounded"
@@ -604,7 +752,28 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
 
       {/* Main Content */}
       <main className="flex-1 flex overflow-hidden">
-        {storyDoc && storyEvents ? (
+        {rawLuaContent !== null ? (
+          <LuaEditor
+            initialContent={rawLuaContent}
+            fileName={rawLuaFileName}
+            onClose={() => { setRawLuaContent(null); }}
+            onSave={(content, name) => handleSaveRawLua(content, name)}
+          />
+        ) : unitDoc !== null ? (
+          <UnitEditor
+            initialDoc={unitDoc}
+            fileName={unitFileName}
+            onClose={() => setUnitDoc(null)}
+            onError={setError}
+          />
+        ) : rawXmlContent !== null ? (
+          <XmlEditor
+            initialContent={rawXmlContent}
+            fileName={rawXmlFileName}
+            onClose={() => { setRawXmlContent(null); }}
+            onSave={(content, name) => handleSaveRawXml(content, name)}
+          />
+        ) : storyDoc && storyEvents ? (
           <StoryEditor
             initialDoc={storyDoc}
             initialEvents={storyEvents}
@@ -852,7 +1021,7 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
                 </div>
 
                 {/* Story Editor */}
-                <div className="bg-slate-900/40 p-6 border border-emerald-900/30 rounded flex flex-col justify-between text-left hover:border-emerald-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(16,185,129,0.02)]">
+                <div className="hidden bg-slate-900/40 p-6 border border-emerald-900/30 rounded flex flex-col justify-between text-left hover:border-emerald-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(16,185,129,0.02)]">
                   <div>
                     <div className="flex items-center space-x-2.5 mb-3">
                       <BookOpen className="w-5 h-5 text-emerald-400 group-hover:animate-pulse" />
@@ -976,6 +1145,137 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
                     )}
                   </div>
                 </div>
+
+                {/* Unit Balance Editor */}
+                <div className="hidden bg-slate-900/40 p-6 border border-emerald-900/30 rounded flex flex-col justify-between text-left hover:border-emerald-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(16,185,129,0.02)]">
+                  <div>
+                    <div className="flex items-center space-x-2.5 mb-3">
+                      <Database className="w-5 h-5 text-emerald-400 group-hover:animate-pulse" />
+                      <h3 className="text-sm font-bold text-emerald-300 tracking-widest uppercase font-mono">Unit Balance Editor</h3>
+                    </div>
+                    <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+                      Visualize and edit stats for <code className="text-emerald-400 font-mono">SpaceUnits</code>, <code className="text-emerald-400 font-mono">GroundInfantry</code>, and <code className="text-emerald-400 font-mono">Squadrons</code>.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 mt-auto">
+                    {workspaceFiles.some(f => f.name.toLowerCase() === 'spaceunits.xml' || f.name.toLowerCase() === 'groundinfantry.xml' || f.name.toLowerCase() === 'units.xml') ? (
+                      <select 
+                         onChange={(e) => {
+                            if (e.target.value) {
+                                loadUnitFromWorkspace(e.target.value);
+                                e.target.value = '';
+                            }
+                         }}
+                         className="w-full bg-slate-950 border border-emerald-800/50 text-slate-300 font-mono text-[10px] uppercase tracking-widest py-2.5 px-2 transition-colors focus:outline-none focus:border-emerald-500 cursor-pointer"
+                      >
+                         <option value="">{t.home.selectFile}</option>
+                         {workspaceFiles.filter(f => f.name.toLowerCase().endsWith('.xml')).map((f, i) => (
+                           <option key={i} value={f.webkitRelativePath || f.name}>{f.name}</option>
+                         ))}
+                      </select>
+                    ) : (
+                      <button 
+                        onClick={() => unitFileInputRef.current?.click()}
+                        className="w-full flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-xs transition-colors"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>Load Units XML</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Raw XML Tool */}
+                <div className="bg-slate-900/40 p-6 border border-rose-900/30 rounded flex flex-col justify-between text-left hover:border-rose-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(244,63,94,0.02)]">
+                  <div>
+                    <div className="flex items-center space-x-2.5 mb-3">
+                      <FileText className="w-5 h-5 text-rose-400 group-hover:animate-pulse" />
+                      <h3 className="text-sm font-bold text-rose-300 tracking-widest uppercase font-mono">{t.home?.xmlTitle || "Raw XML Editor"}</h3>
+                    </div>
+                    <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+                      {t.home?.xmlDesc || "A quick, direct text editor for any Empire at War related XML file with automatic syntax formatting and node closing logic."}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 mt-auto">
+                    {workspaceFiles.some(f => f.name.toLowerCase().endsWith('.xml') && !f.name.toLowerCase().match(/^(planets|planet|story|traderoutes)\.xml$/)) ? (
+                      <select 
+                         onChange={(e) => {
+                            if (e.target.value) {
+                                loadXmlFromWorkspace(e.target.value);
+                                e.target.value = '';
+                            }
+                         }}
+                         className="w-full bg-slate-950 border border-rose-800/50 text-slate-300 font-mono text-[10px] uppercase tracking-widest py-2.5 px-2 transition-colors focus:outline-none focus:border-rose-500 cursor-pointer"
+                      >
+                         <option value="">{t.home.selectFile}</option>
+                         {workspaceFiles.filter(f => f.name.toLowerCase().endsWith('.xml') && !f.name.toLowerCase().match(/^(planets|planet|story|traderoutes)\.xml$/)).map((f, i) => (
+                           <option key={i} value={f.webkitRelativePath || f.name}>{f.name}</option>
+                         ))}
+                      </select>
+                    ) : (
+                      <button 
+                        onClick={() => xmlFileInputRef.current?.click()}
+                        className="w-full flex items-center justify-center space-x-2 bg-rose-600 hover:bg-rose-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-xs transition-colors"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>{t.home?.loadXml || "Load Generic XML"}</span>
+                      </button>
+                    )}
+                    <button 
+                      onClick={handleCreateNewXml}
+                      className="w-full flex items-center justify-center space-x-2 border border-rose-800/50 hover:bg-rose-900/30 text-rose-400 hover:text-rose-300 font-bold uppercase tracking-widest py-2 text-[10px] transition-colors"
+                    >
+                      <span>{t.home?.createEmptyXml || "Create Empty XML"}</span>
+                    </button>
+                  </div>
+                </div>
+                {/* Raw LUA Tool */}
+                <div className="bg-slate-900/40 p-6 border border-yellow-900/30 rounded flex flex-col justify-between text-left hover:border-yellow-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(234,179,8,0.02)]">
+                  <div>
+                    <div className="flex items-center space-x-2.5 mb-3">
+                      <FileText className="w-5 h-5 text-yellow-400 group-hover:animate-pulse" />
+                      <h3 className="text-sm font-bold text-yellow-300 tracking-widest uppercase font-mono">{t.home?.luaTitle || "Raw LUA Editor"}</h3>
+                    </div>
+                    <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+                      {t.home?.luaDesc || "A direct text editor for Lua scripts with syntax highlighting."}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 mt-auto">
+                    {workspaceFiles.some(f => f.name.toLowerCase().endsWith('.lua')) ? (
+                      <select 
+                         onChange={(e) => {
+                            if (e.target.value) {
+                                loadLuaFromWorkspace(e.target.value);
+                                e.target.value = '';
+                            }
+                         }}
+                         className="w-full bg-slate-950 border border-yellow-800/50 text-slate-300 font-mono text-[10px] uppercase tracking-widest py-2.5 px-2 transition-colors focus:outline-none focus:border-yellow-500 cursor-pointer"
+                      >
+                         <option value="">{t.home.selectFile}</option>
+                         {workspaceFiles.filter(f => f.name.toLowerCase().endsWith('.lua')).map((f, i) => (
+                           <option key={i} value={f.webkitRelativePath || f.name}>{f.name}</option>
+                         ))}
+                      </select>
+                    ) : (
+                      <button 
+                        onClick={() => luaFileInputRef.current?.click()}
+                        className="w-full flex items-center justify-center space-x-2 bg-yellow-600 hover:bg-yellow-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-xs transition-colors"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>{t.home?.loadLua || "Load LUA Script"}</span>
+                      </button>
+                    )}
+                    <button 
+                      onClick={handleCreateNewLua}
+                      className="w-full flex items-center justify-center space-x-2 border border-yellow-800/50 hover:bg-yellow-900/30 text-yellow-400 hover:text-yellow-300 font-bold uppercase tracking-widest py-2 text-[10px] transition-colors"
+                    >
+                      <span>{t.home?.createEmptyLua || "Create Empty LUA"}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* User Manual/Docs bottom row */}
@@ -1019,6 +1319,9 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
       <input type="file" ref={datFileInputRef} className="hidden" accept=".dat" onChange={handleDatFileUpload} />
       <input type="file" ref={mtdFileInputRef} className="hidden" accept=".mtd,.tga,.png,.jpg" multiple onChange={handleMtdUpload} />
       <input type="file" ref={storyFileInputRef} className="hidden" accept=".xml" onChange={handleStoryUpload} />
+      <input type="file" ref={xmlFileInputRef} className="hidden" accept=".xml" onChange={handleXmlUpload} />
+      <input type="file" ref={unitFileInputRef} className="hidden" accept=".xml" onChange={handleUnitUpload} />
+      <input type="file" ref={luaFileInputRef} className="hidden" accept=".lua" onChange={handleLuaUpload} />
       <input type="file" ref={folderInputRef} className="hidden" 
              {...{ webkitdirectory: "true", directory: "true" } as any} 
              multiple onChange={handleFolderUpload} />

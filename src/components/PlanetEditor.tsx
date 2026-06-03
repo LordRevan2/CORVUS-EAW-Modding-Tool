@@ -15,8 +15,10 @@ export default function PlanetEditor({ planet, onUpdate, onDelete }: PlanetEdito
   const [localX, setLocalX] = useState<number>(0);
   const [localY, setLocalY] = useState<number>(0);
   const [localZ, setLocalZ] = useState<number>(0);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   
   // Dynamic properties from single-text child nodes
+
   const [dynamicProps, setDynamicProps] = useState<{ tagName: string, value: string }[]>([]);
   const [newNodeName, setNewNodeName] = useState('');
 
@@ -61,6 +63,7 @@ export default function PlanetEditor({ planet, onUpdate, onDelete }: PlanetEdito
       setLocalX(planet.x);
       setLocalY(planet.y);
       setLocalZ(planet.z);
+      setErrorMsg(null);
 
       // Extract all single-node properties (no children, only text) that aren't Galactic_Position
       const extractedProps: { tagName: string, value: string }[] = [];
@@ -98,6 +101,11 @@ export default function PlanetEditor({ planet, onUpdate, onDelete }: PlanetEdito
 
   const handleNameChange = (val: string) => {
     setLocalName(val);
+    if (!val.trim()) {
+      setErrorMsg("Planet name is a required attribute.");
+      return;
+    }
+    setErrorMsg(null);
     onUpdate({ ...planet, name: val });
   };
 
@@ -111,8 +119,15 @@ export default function PlanetEditor({ planet, onUpdate, onDelete }: PlanetEdito
 
   const handleAddNode = () => {
     if (!newNodeName.trim()) return;
-    const tagName = newNodeName.trim().replace(/[^a-zA-Z0-9_]/g, '');
+    const tagName = newNodeName.trim().replace(/[^a-zA-Z0-9_.-]/g, '');
     if (!tagName) return;
+
+    if (!/^[a-zA-Z_]/.test(tagName)) {
+      setErrorMsg(`Invalid XML tag: <${tagName}>. Must start with a letter or underscore.`);
+      return;
+    }
+    
+    setErrorMsg(null);
 
     const doc = planet.el.ownerDocument;
     if (!doc) return;
@@ -147,6 +162,12 @@ export default function PlanetEditor({ planet, onUpdate, onDelete }: PlanetEdito
         <h3 className="text-[11px] font-bold text-cyan-500 uppercase tracking-[0.2em] flex items-center gap-2">
             <span className="w-2 h-2 bg-cyan-500"></span> Planet Attributes
         </h3>
+
+        {errorMsg && (
+            <div className="bg-red-500/10 border border-red-500/50 p-2 rounded text-red-400 text-xs font-bold leading-tight">
+                {errorMsg}
+            </div>
+        )}
 
         <div className="space-y-4">
           <div className="space-y-1.5">

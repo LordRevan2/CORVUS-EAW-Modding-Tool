@@ -1,0 +1,1992 @@
+[https://sgmg.gitlab.io/documentation/luafunctions/ List] of LUA commands by Commander Cody
+
+= Forces of Corruption Lua Commands =
+This is a list of all hardcoded lua commands in Star Wars Empire at War: Forces of Corruption. I believe the list is complete but it is well possible that I missed one command or another. If something is missing or if you find any mistakes, please let us know in our forums: https://stargate-eaw.de/forum. Note that this list only contains hardcoded commands that are specific to the game and therefore does not and is not meant to include any functions that are part of the standard lua library or that are defined in the game’s lua files including the library. Furthermore, this list is a reference only and comments have only been added where we had useful information beyond what is obvious from the name. Question marks are used to indicate that we may not be entirely certain of the accuracy of the given information.
+
+= Global variables =
+{| class="fandom-table table table-striped table-hover"
+!Variable
+!Script type
+!Content
+|-
+|<code>Script</code>
+|All
+| The current script as LuaScriptWrapper
+|-
+|<code>ServiceRate</code>
+|All(?) 
+|The amount of time (in seconds) the script is suspended after a coroutine yield (i.e. call to PumpEvents). This is adjusted to an integer number of frames and is always at least 1 frame or 0.033 seconds. Can be adjusted at any point in the script(?).
+|-
+|<code>LuaThreadTable</code>
+|All?
+|Table whose keys are objects of type thread and whose entries are booleans. The first entry contains the main thread.
+|-
+|<code>LuaWrapperMetaTable</code>
+|All(?)
+| The meta table for all GameObjectWrappers and PlayerWrappers and maybe all other objects. Has entries for __call, __gc, __eq, __tostring and __index.
+|-
+|<code>PlayerObject</code>
+|AI, Freestore and Evaluator scripts
+|The AI player the script is attached to
+|-
+|<code>Target</code>
+|AI and Evaluator scripts
+| The target considered (game object at least in galactic mode)
+|-
+|<code>AITarget</code>
+|AI and Evaluator scripts
+|AITargetLocationWrapper (use .Get_Game_Object() to get corresponding game object if there is one, e.g. the planet in galactic mode)
+|-
+|<code>Object</code>
+|Object scripts
+| The GameObjectWrapper the script is attached to.
+|}
+
+=General functions=
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>GetEvent()</code>
+|<nowiki>-</nowiki>
+|Used to run event handlers like <code>Default_Space_Conflict_Begin</code>. Returns a function when 'C' wants it to be called.
+|-
+|<code>GetEvent.Params()</code>
+|<nowiki>-</nowiki>
+|Returns the parameters for the function call
+|-
+|<code>GetEvent.Reset()</code>
+|<nowiki>-</nowiki>
+|Clear out any thread events
+|-
+|<code>lc(?)</code>
+|<nowiki>-</nowiki>
+|LuaConsolePrint (no luck finding out where it prints to if anywhere at all)
+|-
+|<code>DumpCallStack()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>GetThreadID()</code>
+|<nowiki>-</nowiki>
+|Seems to be equivalent to Thread.Get_Current_ID()
+|-
+|<code>_OuputDebug(X)</code>
+| X = string
+|Prints to _LogFile.txt. Notice the spelling mistake.
+|-
+|<code>_MessagePopup(X)</code>
+| X = string
+|Trigger a message popup window
+|-
+|<code>_CustomScriptMessage(X,Y)</code>
+| X = string(file name), Y = string
+|Print to X. (X can only be a file name, no path)
+|-
+|<code>_DebugBreak(?)</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>_ScriptMessage(X)</code>
+| X = string 
+|Prints to the AILog if it is enabled
+|-
+|<code>_ScriptExit()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>StringCompare(X,Y)</code>
+|X = string, Y = string
+|<nowiki>-</nowiki>
+|-
+|<code>BlockForever(?)</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Is_Multiplayer_Mode()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Get_Game_Mode()</code>
+|<nowiki>-</nowiki>
+|Returns "Land", "Space" or "Galactic"
+|-
+|<code>Is_Campaign_Game()</code>
+|<nowiki>-</nowiki>
+|True for GC games
+|-
+|<code>Lock_Controls(X)</code>
+| X = 0,1
+|(Un)Lock all player controls
+|-
+|<code>Suspend_AI(X)</code>
+| X = 0,1
+|<nowiki>-</nowiki>
+|-
+|<code>Cancel_Fast_Forward()</code>
+|<nowiki>-</nowiki>
+|Stops fast forward
+|-
+|<code>Resume_Hyperspace_In()</code>
+|<nowiki>-</nowiki>
+|In tactical missions when reward parameter 9 of LINK_TACTICAL is set to 2, this will trigger the arrival of the attacking fleet.
+|-
+|<code>Game_Message(X)</code>
+| X = text string from dat file
+|Displays the text entry as a droid advisor hint
+|-
+|<code>Add_Objective(X,Y)</code>
+| X = text string, Y = bool
+| For Y = true the objective is added under the heading "Battle Information", for Y = false it is added under the heading "Mission Objectives"
+|-
+|<code>Remove_Planet_Highlight(X)</code>
+| X = string
+|<nowiki>-</nowiki>
+|-
+|<code>Add_Planet_Highlight(X,Y)</code>
+| X = planet object, Y = string
+|<nowiki>-</nowiki>
+|-
+|<code>Remove_Radar_Blip(X)</code>
+| X = string(identifier)
+|Removes the radar blip identified by X (see Add_Radar_Blip)
+|-
+|<code>Add_Radar_Blip(X,Y)</code>
+| X = game object, Y = string(identifier)
+| Add a radar blip at X with identifier Y
+|-
+|<code>Hide_Sub_Object(X,Y,Z)</code>
+| X = game object, Y = 0,1, Z = string
+|<nowiki>-</nowiki>
+|-
+|<code>Hide_Object(X,Y)</code>
+| X = game object, Y = 0,1
+|<nowiki>-</nowiki>
+|-
+|<code>Assemble_Fleet(X)</code>
+|X = list of game object
+|Assembles the passed objects into a fleet and returns the fleet object
+|-
+|<code>Is_Point_In_Asteroid_Field(?)</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Is_Point_In_Ion_Storm(?)</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Is_Point_In_Nebula(?)</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Are_On_Opposite_Sides_Of_Shield(X,Y)</code>
+|X = position, Y = position
+|<nowiki>-</nowiki>
+|-
+|<code>Are_On_Opposite_Sides_Of_Shield(X,Y,Z,U)</code>
+| X = position, Y = position, Z = player, U = bool
+|<nowiki>-</nowiki>
+|-
+|<code>Activate_Retry_Dialog(?)</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>WaitForStarbase(X,Y)</code>
+| X = planet object, Y = number
+|<nowiki>-</nowiki>
+|-
+|<code>WaitForGroundbase(X,Y)</code>
+| X = planet object, Y = number
+|<nowiki>-</nowiki>
+|-
+|<code>GetNextGroundbaseType(X)</code>
+| X = planet object
+|<nowiki>-</nowiki>
+|-
+|<code>GetNextStarbaseType(X)</code>
+| X = planet object
+|<nowiki>-</nowiki>
+|}
+
+==Game time==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>GetCurrentTime()</code>
+|<nowiki>-</nowiki>
+|Returns game time in seconds
+|-
+|<code>GetCurrentTime.Frame()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>GetCurrentTime.Galactic_Time()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|}
+
+==Finding Game Objects etc.==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>Find_Player(X)</code>
+| X = faction name
+|Returns a PlayerWrapper object
+|-
+|<code>Find_Object_Type(X)</code>
+| X = type name
+|Returns a GameObjectTypeWrapper object
+|-
+|<code>Find_All_Objects_Of_Type(X)</code>
+|X = property flag, player, type name or category
+|Literally finds all objects of this type. That may include projectiles or other unexpected objects.
+|-
+|<code>Find_All_Objects_Of_Type(X,Y)</code>
+| X = property flag, Y = player
+|<nowiki>-</nowiki>
+|-
+|<code>Find_All_Objects_Of_Type(X,Y)</code>
+|X = player , Y = category
+|Categories can be piped together<br>
+(e.g. <code>"Frigate | Capital"</code>).
+|-
+|<code>Find_First_Object(X)</code>
+| X = string(type name)
+|Returns the first object of the given type. Possibly finds objects in reverse spawn order.
+|-
+|<code>FindDeadlyEnemy(X)</code>
+| X = game object or taskforce
+|Returns (the most powerful?) unit attacking X if there is one. Has turned out somewhat unreliable in some cases.
+|-
+|<code>Find_Hint(X,Y)</code>
+| X = string(type name), Y = string(hint)
+|Find an object with a given hint (as set in the map editor).
+|-
+|<code>Find_All_Objects_With_Hint(X)</code>
+| X = string(hint)
+|<nowiki>-</nowiki>
+|-
+|<code>Find_Nearest(X,Y)</code>
+| X = game object (or taskforce or ai target?), Y = type name
+|Returns the nearest object to X that is of type Y. May return nil.
+|-
+|<code>Find_Nearest(X,Y,Z)</code>
+| X = game object, ai target or taskfore, Y = player, Z = bool
+|Returns the nearest unit to X belonging to Y if Z == true. Otherwise it will return the closest unit belonging to an enemy of Y.
+|-
+|<code>Find_Nearest(X,Y,Z,U)</code>
+| X = game object, ai target or taskfore, Y = string(property flag or category mask), Z = player, U = bool
+|<nowiki>-</nowiki>
+|-
+|<code>Find_Nearest_Space_Field(X,Y)</code>
+| X = game object or taskforce, Y = "Asteroid"/"Nebula"/"Ion_Storm"?
+|<nowiki>-</nowiki>
+|-
+|<code>Find_Best_Local_Threat_Center(X,Y)</code>
+| X = unit list, Y = number(distance)
+|Returns position and combined threat of units (from the unit list) in range of the position.
+|-
+|<code>Get_Most_Defended_Position(X,Y)</code>
+| X = game object (or position?), Y = player
+|Tactical only
+|-
+|<code>Project_By_Unit_Range(X,Y)</code>
+| X = game object, Y = game object or taskforce
+|Tactical only. Returns a position outside the range of X
+|-
+|<code>Find_Path(X,Y,Z)</code>
+|X = player, Y = planet object, Z = planet object
+|GC only. Only for AI players. Returns a list of planet objects.
+|-
+|<code>FindPlanet(X)</code>
+| X = string(planet name)
+|GC only
+|-
+|<code>FindPlanet.Get_All_Planets()</code>
+|<nowiki>-</nowiki>
+|GC only
+|}
+
+==Spawning Objects==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>Spawn_Special_Weapon(X,Y)</code>
+|X = string, Y = player
+|Space only
+|-
+|<code>Spawn_From_Reinforcement_Pool(X,Y,Z)</code>
+|player, position, type (in what order?)
+|
+|-
+|<code>Create_Generic_Object(X,Y,Z)</code>
+| X = game object type/type name, Y = position, Z = player
+|This spawns X at Y without regard for collision. Be sure to use a position for Y, using a game object can often crash the script.
+|-
+|<code>Spawn_Unit(X,Y,Z)</code>
+| X = game object type, Y = position or game object, Z = player 
+|Spawns a unit respecting collision. If something blocks the spawn, the unit will be spawned as close to the spawn location as possible. Returns a list whose first entry is the spawned object.
+|-
+|<code>Reinforce_Unit(X,Y,Z,U,V)</code>
+|X = type, Y = position or false, Z = player, U = bool, V = bool (obey_zones)
+|If Y is false, the unit type is added to the reinforcements pool. Returns a CommandBlock.
+|}
+
+==Command block functions==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>.Result()</code>
+|<nowiki>-</nowiki>
+|Get result of action (e.g. spawned units from Reinforce_Unit)
+|-
+|<code>.IsFinished()</code>
+|<nowiki>-</nowiki>
+|Check if action (e.g. unit movement) has finished
+|}
+
+== Any userdata?==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>.Is_Valid()</code>
+|<nowiki>-</nowiki>
+|Usually used on game objects to test if they are still in the game
+|}
+
+==Camera and cinematics==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>Start_Cinematic_Space_Retreat(X,Y)</code>
+| X = number(playerID), Y = number
+|<nowiki>-</nowiki>
+|-
+|<code>End_Cinematic_Mode()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Start_Cinematic_Mode()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Set_Cinematic_Environment(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>Promote_To_Space_Cinematic_Layer(X)</code>
+| X = game object
+|<nowiki>-</nowiki>
+|-
+|<code>Create_Cinematic_Transport(X,Y,Z,U,V,W,R,S,T)</code>
+| X = string(object type), Y = number(playerID), Z = position, U = number(angle), V = number(phase), W = number, R = number, S = number, T = hint(?)
+|<nowiki>-</nowiki>
+|-
+|<code>Cinematic_Zoom(X,Y)</code>
+|X = number, Y = number
+|<nowiki>-</nowiki>
+|-
+|<code>Transition_To_Tactical_Camera(X)</code>
+| X = number(time)
+|<nowiki>-</nowiki>
+|-
+|<code>Transition_Cinematic_Camera_Key(X,Y,Z,U,V,W,R,S,T)</code>
+|X = position, Y = time, Z = x coord, U = y coord, V = z coord, W = 0,1, R = game object or 0, S = 0,1, T = 0,1(?)
+|Transition the camera position to a new position. Setting W to 1 switches Y,Z,U from cartesian coordinates to spherical coordinates (Y being the radius and U being the angle in the x-y-plane).
+|-
+|<code>Set_Cinematic_Camera_Key(X,Y,Z,U,V,W,R,S)</code>
+|X = position, Y = x coord, Z = y coord, U = z coord, V = 0,1, W = game object or 0, R = 0,1, S = 0,1(?)
+| Set a camera position
+|-
+|<code>Transition_Cinematic_Target_Key(X,Y,Z,U,V,W,R,S,T)</code>
+|X = position, Y = time, Z = x coord, U = y coord, V = z coord, W = 0,1, R = game object or 0, S = 0,1, T = 0,1(?)
+|Transition the camera target (what the camera is pointing at) to a new position in Y seconds.
+|-
+|<code>Set_Cinematic_Target_Key(X,Y,Z,U,V,W,R,S)</code>
+|X = position, Y = x coord, Z = y coord, U = z coord, V = 0,1, W = game object or 0, R = 0,1, S = 0,1(?)
+| Set a target position for the camera to point at. If W is given, the camera will follow its movements. Without W the parameters R and S(?) won't work. If R is 1, the function uses W's coordinate system.
+|-
+|<code>End_Cinematic_Camera()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Start_Cinematic_Camera(X)</code>
+| X = bool(default is true)
+|<nowiki>-</nowiki>
+|-
+|<code>Point_Camera_At(X)</code>
+| X = game object or position(?)
+|<nowiki>-</nowiki>
+|-
+|<code>Rotate_Camera_To(?)</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Rotate_Camera_By(X,Y)</code>
+|X = number, Y = number
+|<nowiki>-</nowiki>
+|-
+|<code>Zoom_Camera(X,Y)</code>
+|X = number, Y = number
+|<nowiki>-</nowiki>
+|-
+|<code>Camera_To_Follow(?)</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Scroll_Camera_To(X)</code>
+| X = game object or position(?)
+|<nowiki>-</nowiki>
+|-
+|<code>Fade_Screen_Out(X)</code>
+| X = number(time)
+|Fade screen into blackness
+|-
+|<code>Fade_Screen_In(X)</code>
+| X = number(time)
+|Fade screen back from blackness
+|-
+|<code>Fade_Off()</code>
+|<nowiki>-</nowiki>
+|Turn off blackness from fade
+|-
+|<code>Fade_On()</code>
+|<nowiki>-</nowiki>
+|Make screen black immediately
+|-
+|<code>Letter_Box_Out(X)</code>
+|X = number(time)
+|Move black bars at the top and bottom out of the screen
+|-
+|<code>Letter_Box_In(X)</code>
+|X = number(time)
+|Move black bars at the top and bottom into the screen
+|-
+|<code>Letter_Box_Off()</code>
+|<nowiki>-</nowiki>
+| Get rid of black bars immediately
+|-
+|<code>Letter_Box_On()</code>
+|<nowiki>-</nowiki>
+|Show black bars immediately
+|-
+|<code>Do_End_Cinematic_Cleanup()</code>
+|<nowiki>-</nowiki>
+|Removes all units not marked by In_End_Cinematic?
+|}
+
+==Media and Environment==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>Weather_Audio_Pause(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>Master_Volume_Restore(?)</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Allow_Localized_SFX(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>SFXManager.Allow_Ambient_VO(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>SFXManager.Allow_Enemy_Sighted_VO(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>SFXManager.Allow_HUD_VO(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>SFXManager.Allow_Unit_Reponse_VO(X)</code>
+|X = bool
+|Notice the spelling mistake!
+|-
+|<code>SFXManager.Allow_Localized_SFXEvents(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>Remove_All_Text()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Stop_All_Speech()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Resume_Mode_Based_Music()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Stop_All_Music()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Play_Music(X)</code>
+| X = string
+|<nowiki>-</nowiki>
+|-
+|<code>Stop_Bink_Movie()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Play_Bink_Movie(X)</code>
+| X = string
+|<nowiki>-</nowiki>
+|-
+|<code>Set_New_Environment(?)</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Force_Weather()</code>
+|<nowiki>-</nowiki>
+|Turn on weather effects
+|-
+|<code>Enable_Distance_Fog(?)</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Enable_Fog(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>Play_Lightning_Effect(X,Y,Z)</code>
+| X = string(effect), Y = position, Z = position
+|<nowiki>-</nowiki>
+|}
+
+==Randomization==
+{| class="fandom-table table table-striped table-hover"
+!Function
+
+!Parameters
+!Usage
+|-
+|<code>GameRandom(X, Y)</code>
+| X = integer, Y = integer
+|Returns random integer between X and Y
+|-
+|<code>GameRandom.Get_Float()</code>
+|<nowiki>-</nowiki>
+|Returns random float between 0 and 1
+|-
+|<code>GameRandom.Get_Float(X, Y)</code>
+|X = number, Y = number
+|Returns random float between X and Y
+|-
+|<code>GameRandom.Free_Random(?)</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|}
+
+==Multithreading==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>Create_Thread(X, Y)</code>
+|X = function name as string, Y = anything
+|Starts the function X (more precisely, the function at _G[X]) in a new thread on the next frame with parameter Y and returns the thread ID (an integer). If Y is a table, its contents will be copied into a new list which is given to the function, the keys of the original table will be lost.
+|-
+|<code>Thread(X, Y)</code>
+| X = function name as string, Y = anything
+|Seems to be the same as Create_Thread
+|-
+|<code>Thread.Create(X, Y)</code>
+|X = function name as string, Y = anything
+|Seems to be the same as Create_Thread
+|-
+|<code>Thread.Kill(X)</code>
+|X = thread ID (integer)
+|Stops the thread with ID X
+|-
+|<code>Create_Thread.Kill(X)</code>
+|X = thread ID (integer)
+|<nowiki>-</nowiki>
+|-
+|<code>Thread.Kill_All()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Create_Thread.Kill_All()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Thread.Is_Thread_Active(X)</code>
+|X = thread ID (integer)
+|<nowiki>-</nowiki>
+|-
+|<code>Create_Thread.Is_Thread_Active(X)</code>
+|X = thread ID (integer)
+|<nowiki>-</nowiki>
+|-
+|<code>Thread.Get_Name(X)</code>
+|X = thread ID (integer)
+|Returns the name of the main function ("main" or the function name passed to Create_Thread)
+|-
+|<code>Create_Thread.Get_Name(X)</code>
+|X = thread ID (integer)
+|<nowiki>-</nowiki>
+|-
+|<code>Thread.Get_Current_ID()</code>
+|<nowiki>-</nowiki>
+|Returns the ID of the current thread
+|-
+|<code>Create_Thread.Get_Current_ID()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|}
+
+==Global Values==
+{| class="fandom-table table table-striped table-hover"
+!Function
+
+!Parameters
+!Usage
+|-
+|<code>GlobalValue.Get(X)</code>
+| X = string 
+|Get the value set for X
+|-
+|<code>GlobalValue.Set(X,Y)</code>
+|X = string, Y = value
+|Set a value Y for identifier X. This value is accessible for all lua scripts and can be any variable type except userdata or thread. Can theoretically still be used to access userdata from other scripts, however the game throws an error in that case.
+|}
+
+==Thread Values==
+{| class="fandom-table table table-striped table-hover"
+!Function
+
+!Parameters
+!Usage
+|-
+|<code>ThreadValue(X)</code>
+
+| X = string 
+|Get the value set for X
+|-
+|<code>ThreadValue.Get(X)</code>
+| X = string 
+|Get the value set for X
+|-
+|<code>ThreadValue.Set(X,Y)</code>
+|X = string, Y = value
+|Set a value Y for identifier X. This value is specific to a thread as defined by Create_Thread.
+|-
+|<code>ThreadValue.Reset(X)</code>
+|X = string
+|Sets value for identifier X to nil
+|}
+
+==Discrete Distributions==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>DiscreteDistribution.Create()</code>
+|<nowiki>-</nowiki>
+|Returns a LuaDiscreteDistributionClass object
+|}
+
+===LuaDiscreteDistributionClass===
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>.Insert(X,Y)</code>
+| <code>X</code> = anything?, <code>Y</code> = number
+|<nowiki>-</nowiki>
+|-
+|<code>.Sample()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|}
+
+==Weighted type lists==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>WeightedTypeList.Create()</code>
+|<nowiki>-</nowiki>
+|Returns a WeightedTypeListClass object
+|-
+|<code>EvaluateTypeList(X,Y,Z)</code>
+|X = player, Y = game object, Z = weighted type list
+|returns a list
+|}
+
+===WeightedTypeListClass===
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>.Parse(X,Y)</code>
+| X = list of types(or categories?), Y = list of numbers
+|<nowiki>-</nowiki>
+|}
+
+== Fog of War Reveal (LuaFOWRevealCommandClass)==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>FogOfWar.Reveal_All(X)</code>
+| X = player
+|Reveals the entire map for player X
+|-
+|<code>FogOfWar.Reveal(X,Y,Z)</code>
+|X = player, Y = position, Z = number(radius)
+|Reveals FoW at Y with radius Z for player X (in some vanilla source scripts a 4th parameter is used, but it doesn't seem to do anything). Returns a LuaFOWCellsClass object that can be used to undo the reveal.
+|-
+|<code>FogOfWar.Temporary_Reveal(X,Y,Z)</code>
+|X = player, Y = position, Z = number(radius)
+|Reveals FoW at Y with radius Z for player X for about 5 seconds.
+|-
+|<code>FogOfWar.Disable_Rendering(X)</code>
+|X = bool
+| X = true makes units visible that should be hidden by the Fog of War.
+|}
+
+===LuaFOWCellsClass Functions===
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>.Undo_Reveal()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|}
+
+= Xml Event Manipulation=
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>Story_Event(X,Y)</code>
+| X = string, Y = game object?(optional)
+|Trigger a STORY_AI_NOTIFICATION event
+|-
+|<code>Check_Story_Flag(X,Y,Z,U)</code>
+|X = player, Y = string, Z = game object, U = bool
+|Checks if corresponding reward type TRIGGER_AI has fired.
+|-
+|<code>Get_Story_Plot(X)</code>
+| X = string (story_file_name.xml)
+|Returns the story file as StoryPlotWrapper object. The parameter is case sensitive.
+|}
+
+==StoryPlotWrapper Functions==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>.Get_Event(X)</code>
+| X = string(Event name)
+|Returns the xml event as StoryEventWrapper object.
+|-
+|<code>.Suspend()</code>
+|<nowiki>-</nowiki>
+|Suspends the plot
+|-
+|<code>.Activate()</code>
+|<nowiki>-</nowiki>
+|Activates the plot
+|-
+|<code>.Reset()</code>
+|<nowiki>-</nowiki>
+|Resets all events of the plot
+|}
+
+==StoryEventWrapper Functions==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>.Set_Reward_Type(X)</code>
+| X = string(reward type)
+|<nowiki>-</nowiki>
+|-
+|<code>.Set_Reward_Parameter(X,Y)</code>
+|X = number, Y = something that makes sense
+|Sets Reward_Param(X+1) as Y (X is 0 for Reward_Param1).
+|-
+|<code>.Set_Event_Parameter(X,Y)</code>
+|X = number, Y = something that makes sense
+|Sets Event_Param(X+1) as Y (X is 0 for Event_Param1).
+|-
+|<code>.Set_Dialog(X)</code>
+| X = string(dialog file name)
+|Sets the dialog file.
+|-
+|<code>.Clear_Dialog_Text()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Add_Dialog_Text(X,...)</code>
+| X = string(text identifier from dat file) 
+|The text will be formatted with any additional parameters given.
+|}
+
+=GameObjectWrapper Functions=
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>.Despawn()</code>
+|<nowiki>-</nowiki>
+|Removes the object from the game
+|-
+|<code>.Get_Planet_Location()</code>
+|<nowiki>-</nowiki>
+|Returns the planet object (GC only)
+|-
+|<code>.Move_To(X)</code>
+|X = Object or Position
+|Moves the Object to X, returns a UnitMovementBlockStatus object
+|-
+|<code>.Move_To(X, Y)</code>
+| X = Unit_List, Y = Object
+|Moves Unit_List to Y in formation (does Object have to be contained in X?), returns a UnitMovementBlockStatus object
+|-
+|<code>.Attack_Move(X)</code>
+| X = Object/Position
+|Returns a UnitMovementBlockStatus object
+|-
+|<code>.Attack_Move(X, Y)</code>
+| X = Unit_List, Y = Object/Position
+|Returns a UnitMovementBlockStatus object
+|-
+|<code>.Attack_Target(X)</code>
+
+| X = Object
+|Attack X, returns a UnitMovementBlockStatus object
+|-
+|<code>.Attack_Target(X, Y)</code>
+| X = Unit_List, Y = Object 
+|Attack Y with Unit_List (does the object have to be part of Unit_List?), returns a UnitMovementBlockStatus object
+|-
+|<code>.Guard_Target(X)</code>
+| X = PositionsObject
+|Returns a UnitMovementBlockStatus object
+|-
+|<code>.Guard_Target(X, Y)</code>
+| X = Unit_List, Y = Object 
+|Guard Y with Unit_List (does the object have to be part of Unit_List?), returns a UnitMovementBlockStatus object
+|-
+|<code>.Can_Move()</code>
+|<nowiki>-</nowiki>
+|Returns true if the unit can currently move (is false e.g. during hyperspace in)
+|-
+|<code>.Stop()</code>
+|<nowiki>-</nowiki>
+|Stops the unit
+|-
+|<code>.Suspend_Locomotor(X)</code>
+|X = true / false 
+|movability on or off
+|-
+|<code>.Get_Position()</code>
+|<nowiki>-</nowiki>
+|Returns Position of the Object
+|-
+|<code>.Enable_Behavior(X, Y)</code>
+|X = Number of behavior, Y = true / false
+|Enables specific behavior
+|-
+|<code>.Activate_Ability(X, Y)</code>
+| X = AbilityName (string), Y = true / false
+|Activates untargeted ability
+|-
+|<code>.Activate_Ability(X, Y)</code>
+| X = AbilityName (string), Y = Object or location
+|Activates targeted ability
+|-
+|<code>.Reset_Ability_Counter()</code>
+|<nowiki>-</nowiki>
+|Finishes ability cooldown
+|-
+|<code>.Set_Single_Ability_Autofire(X, Y)</code>
+| X = AbilityName (string), Y = true / false
+|<nowiki>-</nowiki>
+|-
+|<code>.Set_All_Abilities_Autofire(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>.Is_Ability_Autofire()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Is_Ability_Active(X)</code>
+| X = AbilityName (string)
+|Returns true or false
+|-
+|<code>.Is_Ability_Ready(X)</code>
+| X = AbilityName (string)
+|Returns true or false
+|-
+|<code>.Has_Ability(X)</code>
+| X = AbilityName (string)
+|Returns true or false
+|-
+|<code>.Force_Ability_Recharge(X, Y)</code>
+|X = string, Y = number(optional)
+|<nowiki>-</nowiki>
+|-
+|<code>.Cancel_Ability(X)</code>
+| X = string(ability)
+|<nowiki>-</nowiki>
+|-
+|<code>.Take_Damage(X, Y)</code>
+| X = Damage points
+|<nowiki>-</nowiki>
+|-
+|<code>-</code>
+|Y(optional) = Hardpoint(string)
+|<nowiki>-</nowiki>
+|-
+|<code>.Are_Engines_Online()</code>
+|<nowiki>-</nowiki>
+|Returns true or false
+|-
+|<code>.Override_Max_Speed(X)</code>
+| X = number
+|<nowiki>-</nowiki>
+|-
+|<code>.Cinematic_Hyperspace_In(X)</code>
+|X = integer (number of frames)
+|Makes unit hyperspace into battle with delay by X frames (spawning many units with different delays at the same time seems spawns all units with the same delay anyway)
+|-
+|<code>.Hyperspace_Away(X)</code>
+|X = true/false (default is true)
+|Makes unit leave into hyperspace. If X is true, the unit gets deleted from GC
+|-
+|<code>.Cancel_Hyperspace()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Prevent_AI_Usage(X)</code>
+| X = true / false
+|Allow or prevent AI usage. In tactical battles this crashes the game if the unit has no active AI! When the factions AI changes, the unit is AI usable again.
+|-
+|<code>.Hide(X)</code>
+| X = true / false 
+|(Un)Hides the object
+|-
+|<code>.Play_Animation(X, Y, Z)</code>
+|X = Animation name (string)
+|<nowiki>-</nowiki>
+|-
+|<code>-</code>
+| Y = bool
+|<nowiki>-</nowiki>
+|-
+|<code>-</code>
+| Z = integer
+|<nowiki>-</nowiki>
+|-
+|<code>.Change_Owner(X)</code>
+| X = PlayerObject
+|Sets objects owner to new faction
+|-
+|<code>.In_End_Cinematic(X)</code>
+| X = true / false
+|Shall object be displayed in Cinematic?
+|-
+|<code>.Teleport(X)</code>
+| X = PositionsObject
+|Teleport object to X
+|-
+|<code>.Teleport_And_Face(X)</code>
+| X = Object
+|Teleport object to X and make it face the same way as X
+|-
+|<code>.Face_Immediate(X)</code>
+| X = PositionsObject
+|Make unit face toward X immediately
+|-
+|<code>.Turn_To_Face(X)</code>
+| X = PositionsObject
+|Make unit turn to face toward X
+|-
+|<code>.Prevent_Opportunity_Fire(X)</code>
+| X = true / false
+|Prevent automatically firing at targets in range
+|-
+|<code>.Prevent_All_Fire(X)</code>
+|X = true / false
+|Completely prevent a unit from firing
+|-
+|<code>.Make_Invulnerable(X)</code>
+| X = true / false
+|Stops object from taking any damage
+|-
+|<code>.Set_Check_Contested_Space(X)</code>
+| X = true / false
+|Make the unit/fleet not trigger space tactical battles?
+|-
+|<code>.Get_Parent_Object()</code>
+|<nowiki>-</nowiki>
+| For fleets this is a PlanetObject, for units in GC it's the fleet, for ground forces it's the transport?, for fighters it's the squadron
+|-
+|<code>.Lock_Current_Orders()</code>
+|<nowiki>-</nowiki>
+|Only for units belonging to AI players
+|-
+|<code>.Unlock_Current_Orders()</code>
+|<nowiki>-</nowiki>
+|Only for units belonging to AI players
+|-
+|<code>.Is_In_Asteroid_Field()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Is_In_Ion_Storm()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Is_In_Nebula()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_Type()</code>
+|<nowiki>-</nowiki>
+|Returns the unit's type (GameObjectTypeWrapper object)
+|-
+|<code>.Is_Corrupted()</code>
+|<nowiki>-</nowiki>
+| Use on planets
+|-
+|<code>.Enable_Dynamic_LOD(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>.Invade()</code>
+|<nowiki>-</nowiki>
+|Only for fleets with land units in orbit over an enemy planet (is used in FoC campaign but doesn't seem to work in regular GC)
+|-
+|<code>.Set_In_Limbo(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_All_Projectile_Types()</code>
+|<nowiki>-</nowiki>
+|Returns a list of the projectile types (GameObjectTypeWrappers) the unit uses
+|-
+|<code>.Is_Selectable()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_Current_Projectile_Type()</code>
+|<nowiki>-</nowiki>
+|Returns the projectile type the unit is currently using
+|-
+|<code>.Should_Switch_Weapons(X)</code>
+| X = game object or ai target
+|Returns true if alternate weaponry of the unit is better against (?) X
+|-
+|<code>.Is_Good_Against(X)</code>
+| X = game object or ai target
+|<nowiki>-</nowiki>
+|-
+|<code>.Is_In_Garrison()</code>
+|<nowiki>-</nowiki>
+|Is the unit garrisoned
+|-
+|<code>.Get_Garrisoned_Units()</code>
+|<nowiki>-</nowiki>
+|Returns a list of units garrisoned inside the object
+|-
+|<code>.Has_Garrison()</code>
+|<nowiki>-</nowiki>
+|Returns true if the object contains any garrisoned units
+|-
+|<code>.Eject_Garrison()</code>
+|<nowiki>-</nowiki>
+|Eject all garrisoned units
+|-
+|<code>.Leave_Garrison()</code>
+|<nowiki>-</nowiki>
+|Make a garrisoned unit leave its garrison
+|-
+|<code>.Can_Garrison_Fire()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Can_Garrison(X)</code>
+| X = game object or ai target
+| Can the unit be garrisoned in X?
+|-
+|<code>.Garrison(X)</code>
+| X = game object or ai target
+|Garrison the unit in X
+|-
+|<code>.Get_Attack_Target()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Can_Land_On_Planet(X)</code>
+| X = game object (planet)
+| Can the unit land on planet X?
+|-
+|<code>.Get_Is_Planet_AI_Usable()</code>
+|<nowiki>-</nowiki>
+| Can only be used on planets
+|-
+|<code>.Play_Cinematic_Engine_Flyby()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Stop_SFX_Event(X,Y)</code>
+|X = string, Y = number(optional)
+|<nowiki>-</nowiki>
+|-
+|<code>.Attach_Particle_Effect(X,Y)</code>
+| X = type or type name, y = string(optional)
+|<nowiki>-</nowiki>
+|-
+|<code>.Has_Attack_Target()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Show_Emitter(X, Y)</code>
+| X = string(emitter), Y = bool
+|<nowiki>-</nowiki>
+|-
+|<code>.Highlight_Small(X, Y)</code>
+|X = bool, Y = number(optional)
+| Put a small arrow highlight on top of the object
+|-
+|<code>.Highlight(X, Y)</code>
+|X = bool, Y = number(optional)
+| Put an arrow highlight on top of the object
+|-
+|<code>.Explore_Area(X)</code>
+| X = ai target location
+|<nowiki>-</nowiki>
+|-
+|<code>.Disable_Capture(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>.Force_Test_Space_Conflict()</code>
+|<nowiki>-</nowiki>
+|Enforce check if a space battle should be initiated, e.g. after spawning a fleet at an enemy planet (only works on fleets and planets)
+|-
+|<code>.Play_SFX_Event(X,Y)</code>
+|X = string, Y = number(optional)
+|<nowiki>-</nowiki>
+|-
+|<code>.Set_Cannot_Be_Killed(X)</code>
+| X = bool
+|Keep a unit from dying (it can still be damaged)
+|-
+|<code>.Get_Hint()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Set_Garrison_Spawn(X)</code>
+|X = bool 
+|Turn spawn of garrison units on/off
+|-
+|<code>.Fire_Tactical_Superweapon()</code>
+|<nowiki>-</nowiki>
+|Fire death star in tactical
+|-
+|<code>.Is_Tactical_Superweapon_Ready()</code>
+|<nowiki>-</nowiki>
+|Test if death star is ready to fire
+|-
+|<code>.Get_Bone_Position(X)</code>
+| X = string(bone name)
+|<nowiki>-</nowiki>
+|-
+|<code>.Lock_Build_Pad_Contents(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>.Is_Planet_Destroyed()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_Affiliated_Indigenous_Type(X)</code>
+| X = player
+| Use on planets. Returns the indigenous unit type of that planet affiliated with X
+|-
+|<code>.Is_On_Diversion()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Has_Property(X)</code>
+| X = string(property flag)
+|<nowiki>-</nowiki>
+|-
+|<code>.Destroy_Contained_Objects(X)</code>
+| X = number
+|Only use on fleets
+|-
+|<code>.Contains_Object_Type(X)</code>
+| X = game object type
+|Only use on fleets
+|-
+|<code>.Get_Contained_Object_Count()</code>
+|<nowiki>-</nowiki>
+|Only use on fleets
+|-
+|<code>.Has_Active_Orders()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_AI_Power_Vs_Unit(X)</code>
+| X = game object
+|(tactical only)
+|-
+|<code>.Divert(X,Y)</code>
+|X = object or position, Y = number(optional)
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_Next_Starbase_Type()</code>
+|<nowiki>-</nowiki>
+| Use on planets
+|-
+|<code>.Mark_Parent_Mode_Object_For_Death()</code>
+|<nowiki>-</nowiki>
+| Use in tactical. This kills the corresping GC object
+|-
+|<code>.Set_Importance(X)</code>
+| X = number
+|<nowiki>-</nowiki>
+|-
+|<code>.Service_Wrapper()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Cancel_Event_Object_In_Range(X)</code>
+| X = function
+|<nowiki>-</nowiki>
+|-
+|<code>.Event_Object_In_Range(X,Y,Z)</code>
+|X = function, Y = number(distance), Z = player(optional)
+|Calls X(self, trigger_object) continually for each trigger_object affiliated with Z in range
+|-
+|<code>.Get_Final_Blow_Player()</code>
+|<nowiki>-</nowiki>
+|Used on planets, returns a player
+|-
+|<code>.Get_Starbase_Level()</code>
+|<nowiki>-</nowiki>
+|Only used on planets(?)
+|-
+|<code>.Get_Owner()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Sell()</code>
+|<nowiki>-</nowiki>
+|Possibly only for build pad contents
+|-
+|<code>.Get_Build_Pad_Contents()</code>
+|<nowiki>-</nowiki>
+|Use on build pads or MDUs
+|-
+|<code>.Get_Distance(X)</code>
+| X = position
+|Returns a number
+|-
+|<code>.Get_Contained_Heroes()</code>
+|<nowiki>-</nowiki>
+|Only for fleets?
+|-
+|<code>.Contains_Hero()</code>
+|<nowiki>-</nowiki>
+|Only for fleets
+|-
+|<code>.Fire_Special_Weapon(X,Y)</code>
+| X = game object(target), Y = player(user)
+| Use on space station apparently
+|-
+|<code>.Get_Rate_Of_Damage_Taken()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_Time_Till_Dead()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Set_Targeting_Stickiness_Time_Threshold(X)</code>
+| X = number
+|<nowiki>-</nowiki>
+|-
+|<code>.Set_Targeting_Priorities(X)</code>
+| X = string(targeting priority set)
+|<nowiki>-</nowiki>
+|-
+|<code>.Set_Prefer_Ground_Over_Space(X)</code>
+| X = bool 
+|Obeject needs UNIT_AI behavior
+|-
+|<code>.Get_Game_Scoring_Type()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Is_Category(X)</code>
+| X = string(category name)
+| Can use pipe to concatenate categories
+|-
+|<code>.Get_Shield()</code>
+|<nowiki>-</nowiki>
+|Normalized wrt total shield points (i.e. returns number between 0 and 1)
+|-
+|<code>.Get_Energy()</code>
+|<nowiki>-</nowiki>
+|Normalized wrt units total energy
+|-
+|<code>.Get_Health()</code>
+|<nowiki>-</nowiki>
+|Normalized wrt units total health
+|-
+|<code>.Get_Hull()</code>
+|<nowiki>-</nowiki>
+|Normalized wrt units total health (apparently the same as Get_Health)
+|-
+|<code>.Is_Transport()</code>
+|<nowiki>-</nowiki>
+| Use in galactic
+|-
+|<code>.Release()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Build(X,Y)</code>
+| X = type or type name, Y = bool(optional)?
+| Use on buildpads and MDUs
+|}
+
+=GameObjectTypeWrapper Functions=
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>.Get_Name()</code>
+|<nowiki>-</nowiki>
+|Returns the name of the game object type (the xml name)
+|-
+|<code>.Get_Combat_Rating()</code>
+|<nowiki>-</nowiki>
+|Returns the AI_Combat_Power
+|-
+|<code>.Is_Hero()</code>
+|<nowiki>-</nowiki>
+|Returns true/false
+|-
+|<code>.Get_Build_Cost()</code>
+|<nowiki>-</nowiki>
+|Returns build cost
+|-
+|<code>.Get_Tech_Level()</code>
+|<nowiki>-</nowiki>
+|Returns required tech level
+|-
+|<code>.Get_Base_Level()</code>
+|<nowiki>-</nowiki>
+|Returns level of a starbase type
+|-
+|<code>.Is_Affiliated_With(X)</code>
+| X = player
+|<nowiki>-</nowiki>
+|-
+|<code>.Is_Build_Locked(X)</code>
+| X = player
+|<nowiki>-</nowiki>
+|-
+|<code>.Is_Obsolete(X)</code>
+| X = player
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_Tactical_Build_Cost()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_Score_Cost_Credits()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_Max_Range()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_Min_Range()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_Bribe_Cost()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Is_Affected_By_Missile_Shield()</code>
+|<nowiki>-</nowiki>
+|This is used only for projectile types
+|-
+|<code>.Is_Affected_By_Laser_Defense()</code>
+|<nowiki>-</nowiki>
+|This is used only for projectile types
+|}
+
+=PlayerWrapper Functions=
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>.Enable_Advisor_Hints(X, Y)</code>
+| X = "space" or "ground"
+|Enables Advisor Hints
+|-
+|<code>-</code>
+| Y = true / false
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_ID()</code>
+|<nowiki>-</nowiki>
+|returns ID of PlayerObject
+|-
+|<code>.Get_Enemy()</code>
+|<nowiki>-</nowiki>
+|Returns an enemy player (I suspect it only ever returns Rebel or Empire, in any case there is not much point using it outside the base EaW though it might be related to the Primary Enemy tag)
+|-
+|<code>.Select_Object(X)</code>
+| X = Object 
+|Forces player to select object
+|-
+|<code>.Enable_As_Actor()</code>
+|<nowiki>-</nowiki>
+|Activates the AI for that player
+|-
+|<code>.Retreat()</code>
+|<nowiki>-</nowiki>
+|Enables retreat event
+|-
+|<code>.Get_Name()</code>
+|<nowiki>-</nowiki>
+|returns the displayed faction name
+|-
+|<code>.Get_Faction_Name()</code>
+|<nowiki>-</nowiki>
+|returns xml faction name
+|-
+|<code>.Get_Tech_Level()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Is_Human()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Give_Random_Sliceable_Tech()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Give_Money(X)</code>
+| X = amount (integer/float?)
+|<nowiki>-</nowiki>
+|-
+|<code>.Make_Ally(X)</code>
+|X = player
+|Gets reset with any game mode changes, in particular at the end of every tactical battle!
+|-
+|<code>.Make_Enemy(X)</code>
+|X = player
+|Gets reset with any game mode changes, in particular at the end of every tactical battle!
+|-
+|<code>.Get_Space_Station()</code>
+|<nowiki>-</nowiki>
+|Returns the player's space station in space tactical
+|-
+|<code>.Get_Team()</code>
+|<nowiki>-</nowiki>
+|Team ID in skirmish
+|-
+|<code>.Get_Clan_ID()</code>
+|<nowiki>-</nowiki>
+|Clan ID in skirmish
+|-
+|<code>.Remove_Orbital_Bombardment(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>.Disable_Orbital_Bombardment(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>.Set_Sabotage_Tutorial(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>.Set_Black_Market_Tutorial(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_Difficulty()</code>
+|<nowiki>-</nowiki>
+|Returns "Easy", "Normal" or "Hard"
+|-
+|<code>.Disable_Bombing_Run(X)</code>
+|X = bool
+| X = false disables bombing run for the given faction in ground tactical, X = true enables it
+|-
+|<code>.Is_Ally()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Is_Enemy()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Unlock_Tech(X)</code>
+| X = GameObjectTypeWrapper
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_GameSpy_Stats_Player_ID()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_Credits()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Release_Credits_For_Tactical(X)</code>
+| X = Number (optional?) 
+|For AI player (with galactic AI) only. Releases credits for spending in (land only?) mode.
+|-
+|<code>.Set_Tech_Level(X)</code>
+
+| X = Number
+|<nowiki>-</nowiki>
+|}
+
+=AI=
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>Evaluate_In_Galactic_Context(X)</code>
+| X = string(perception)
+| For tactical battle. Evaluates the perception at GC level.
+|-
+|<code>Apply_Markup(X,Y,Z,U)</code>
+|X = player, Y = list, Z = number, U = ?
+|<nowiki>-</nowiki>
+|-
+|<code>Purge_Goals(X)</code>
+
+| X = player
+|<nowiki>-</nowiki>
+|-
+|<code>GiveDesireBonus(X,Y,Z,U,V)</code>
+|X = player, Y = string(goal(set?)), Z = ai target, U = number, V = number
+|<nowiki>-</nowiki>
+|-
+|<code>EvaluatePerception(X,Y,Z)</code>
+| X = string(perception), Y = player, Z = game object/ai target
+|Evaluates a perception and returns the result. Y and Z are needed if and only if the perception uses Variable_Self and Variable_Target, respectively.
+|-
+|<code>_FindStageArea(X,Y,Z)</code>
+|X = player, Y = game object/ai target, Z = taskforce
+|Deprecated but may still work as intended
+|-
+|<code>_ProduceObject(X,Y,Z)</code>
+| X = player, Y = game object type (name?), Z = planet/ ai target
+|Deprecated but may still work as intended
+|-
+|<code>FindTarget(X,Y,Z,U,V)</code>
+| X = taskforce, Y = perception, Z = goal application flag, U = number(probability), V = number(range) 
+|Find a target for a taskforce. Tries to find the one that the perception returns the highest value on.
+|-
+|<code>FindTarget.Reachable_Target(X,Y,Z,U,V,W,R)</code>
+|X = player, Y = perception, Z = goal application, U = reachability, V = probability, W = ai target, R = range
+|Find a target for an aiplayer. Tries to find the one that the perception returns the highest value on.
+|-
+|<code>FindTarget.Best_Of(X,Y,Z)</code>
+| X = taskforce, Y = list of game objects/ai targets, Z = string(perception?)
+|<nowiki>-</nowiki>
+|}
+
+==AITargetLocationWrapper==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>.Get_Game_Object()</code>
+|<nowiki>-</nowiki>
+|Returns corresponding game object if there is one (e.g. a targeted unit or planet).
+|-
+|<code>.Get_Distance(X)</code>
+| X = position
+|<nowiki>-</nowiki>
+|}
+
+==FreeStoreClass==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>FreeStore.Is_Object_On_Free_Store(X)</code>
+| X = game object
+|<nowiki>-</nowiki>
+|-
+|<code>FreeStore.Get_Object_Count()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>FreeStore.Is_Unit_Safe(X)</code>
+| X = game object
+|GC only(?)
+|-
+|<code>FreeStore.Is_Unit_In_Transit(X)</code>
+| X = game object
+|GC only(?)
+|-
+|<code>FreeStore.Move_Object(X,Y)</code>
+| X = game object, Y = planet
+|GC only(?)
+|}
+
+==TaskForceClass==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>.Get_Goal_Type_Name()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Test_Target_Contrast(X)</code>
+| X = bool
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_Self_Threat_Sum()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_Self_Threat_Max()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_Unit_Table()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Clear_Opportunity_Fire_Event_Subscriptions()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Remove_Opportunity_Fire_Event_Subscription()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Add_Opportunity_Fire_Event_Subscription()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Set_Plan_Result(X)</code>
+| X = bool
+|Sets plan to successful (true) or failed (false)
+|-
+|<code>.Are_All_Units_On_Free_Store()</code>
+|<nowiki>-</nowiki>
+|Check if all required units are available in the freestore
+|-
+|<code>.Get_Stage()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Unblock_Goal_Proposal()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Block_Goal_Proposal()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Collect_All_Free_Units()</code>
+|<nowiki>-</nowiki>
+|Add all units from the freestore to the taskforce
+|-
+|<code>.Release_Unit(X)</code>
+| X = game object
+|<nowiki>-</nowiki>
+|-
+|<code>.Withdraw_Units()</code>
+|<nowiki>-</nowiki>
+|Retreat
+|-
+|<code>.Release_Forces(X)</code>
+|0 < X < 1.0
+|<nowiki>-</nowiki>
+|-
+|<code>.Set_As_Goal_System_Removable(X)</code>
+|X = bool
+|(Dis)allow hardcoded AI systems to terminate the goal (and plan)
+|-
+|<code>.Get_Force_Count()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Produce_Force(X,Y)</code>
+| X = stage(optional), Y = bool(optional)
+|Assemble the taskforce a the given stage by building units or collecting them from the freestore
+|-
+|<code>.Form_Units()</code>
+|<nowiki>-</nowiki>
+|Forms a fleet object with the taskforces units
+|-
+|<code>.Add_Force(X)</code>
+| X = game object
+|Adds a unit to the taskforce
+|-
+|<code>.Get_Type_Of_Unit(X)</code>
+| X = number(index)
+|<nowiki>-</nowiki>
+|-
+|<code>.Leave_Garrison()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Can_Garrison(X)</code>
+| X = game object
+|<nowiki>-</nowiki>
+|-
+|<code>.Garrison(X)</code>
+| X = game object
+|<nowiki>-</nowiki>
+|-
+|<code>.Set_All_Abilities_Autofire()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>.Set_Single_Ability_Autofire(X,Y)</code>
+| X = string(ability name), Y = bool
+|<nowiki>-</nowiki>
+|-
+|<code>.Get_AI_Power_Vs_Unit(X)</code>
+| X = game object
+|<nowiki>-</nowiki>
+|-
+|<code>.Set_Targeting_Stickiness_Time_Threshold(X)</code>
+| X = number
+|<nowiki>-</nowiki>
+|-
+|<code>.Set_Targeting_Priorities(X)</code>
+| X = string(targeting priority set)
+|<nowiki>-</nowiki>
+|-
+|<code>.Move_To(X,Y,Z)</code>
+| X = game object/position
+Y = number(threat)(optional)
+Z = string(space fields)(optional)
+|Tactical only
+|-
+|<code>.Attack_Move(X,Y,Z(?))</code>
+| X = game object/position, Y = number(threat)(optional), Z = string(space fields)(optional)
+|Tactical only
+|-
+|<code>.Guard_Target(X,Y,Z(?))</code>
+| X = game object/taskforce, Y = number(threat)(optional), Z = string(space fields)(optional)
+|Tactical only
+|-
+|<code>.Attack_Target(X,Y,Z)</code>
+| X = game object, Y = number(threat)(optional), Z = string(space fields)(optional)
+|Tactical only
+|-
+|<code>.Attack_Target(X,Y,Z)</code>
+| X = game object, Y = string (hardpoint type), Z = number (threat?)(optional?)
+|Tactical only
+|-
+|<code>.Release_Reinforcements(?)</code>
+|<nowiki>-</nowiki>
+|Tactical only
+|-
+|<code>.Get_Reserved_Build_Pads()</code>
+|<nowiki>-</nowiki>
+|Tactical only
+|-
+|<code>.Build_All()</code>
+|<nowiki>-</nowiki>
+|Tactical only
+|-
+|<code>.Reinforce(X,Y)</code>
+|X = position, Y = number(optional)
+|Tactical only
+|-
+|<code>.Prepare_Ambush(X,Y,Z,U,V?)</code>
+|X = position, Y = string(back, front, right, left?), Z = number>0, U = number, V = bool?
+|Tactical only (not used)
+|-
+|<code>.Find_Closest_Enemy(X,Y)</code>
+|X = string, Y = ?(optional)
+|Tactical only
+|-
+|<code>.Enable_Attack_Positioning(X)</code>
+| X = bool
+|Tactical only
+|-
+|<code>.Explore_Area(X)</code>
+|X = ai target location
+|Tactical only
+|-
+|<code>.Get_Distance(X)</code>
+| X = position
+|Tactical only
+|-
+|<code>.Fire_Special_Weapon(X,Y)</code>
+|X = string, Y = ai target/game object
+|Tactical only
+|-
+|<code>.Build(X,Y)</code>
+|X = string, Y = game object(build pad)
+|Tactical only
+|-
+|<code>.Activate_Ability(X,Y)</code>
+| X = string(ability name), Y = bool
+|Tactical only
+|-
+|<code>.Fire_Orbital_Bombardment(X)</code>
+| X = position
+|Land only
+|-
+|<code>.Bombing_Run(X)</code>
+|X = ai target or game object
+|Land only
+|-
+|<code>.Move_To(X)</code>
+| X = game object(planet)
+|GC only
+|-
+|<code>.Activate_Ability()</code>
+|<nowiki>-</nowiki>
+|GC only
+|-
+|<code>.Raid(X)</code>
+| X = game object(planet)
+|GC only
+|-
+|<code>.Is_Raid_Capable()</code>
+|<nowiki>-</nowiki>
+|GC only
+|-
+|<code>.Refit_To_Definition(X,Y)</code>
+| X = game object(planet)
+Y = number
+|GC only
+|-
+|<code>.Launch_Units()</code>
+|<nowiki>-</nowiki>
+|Launches (land) units into orbit. GC only
+|-
+|<code>.Land_Units()</code>
+|<nowiki>-</nowiki>
+|Lands units on a planet. GC only
+|-
+|<code>.Invade()</code>
+|<nowiki>-</nowiki>
+|Starts a ground invasion (seems to require very specific circumstances to work) GC only
+|-
+|<code>.Force_Test_Space_Conflict()</code>
+|<nowiki>-</nowiki>
+|GC only
+|}
+
+==BudgetWrapper==
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>Budget.Flush_Category(X)</code>
+| X = string(goal category)
+|<nowiki>-</nowiki>
+|-
+|<code>Budget.Flush_All_Resources()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Budget.Flush_Unallocated_Resources()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Budget.Take_Resources_From_Goal(X,Y)</code>
+|X = number>0, Y = string
+|<nowiki>-</nowiki>
+|-
+|<code>Budget.Give_Resources_To_Goal(X,Y)</code>
+|X = number>0, Y = string
+|<nowiki>-</nowiki>
+|-
+|<code>Budget.Wait_For_Unallocated_Resources(X)</code>
+| X = number
+|<nowiki>-</nowiki>
+|-
+|<code>Budget.Wait_For_Spendable_Resources(X)</code>
+| X = number
+|<nowiki>-</nowiki>
+|-
+|<code>Budget.Allocate_Resources(X)</code>
+| X = number
+|<nowiki>-</nowiki>
+|-
+|<code>Budget.Get_Spendable_Resources()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|-
+|<code>Budget.Get_Unallocated_Resources()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|}
+
+=LuaScriptWrapper=
+{| class="fandom-table table table-striped table-hover"
+!Function
+!Parameters
+!Usage
+|-
+|<code>Script.Debug_Should_Issue_Event_Alert()</code>
+|<nowiki>-</nowiki>
+|<nowiki>-</nowiki>
+|}

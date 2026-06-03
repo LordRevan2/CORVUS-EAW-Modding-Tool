@@ -2,10 +2,23 @@ import React, { useState, useRef } from 'react';
 import Editor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-markup';
-import { Search, Save, X, Plus, Trash2, ListTree, BookOpen, Code, Settings2 } from 'lucide-react';
+import { Search, Save, X, Plus, Trash2, ListTree, BookOpen, Code, Settings2, Wand2 } from 'lucide-react';
 import { useTranslation } from '../i18n';
 import { StoryEvent, AppSettings } from '../types';
 import { serializeXml, updateStoryEventInDoc, updateStoryEventFromXml, parseStoryXml } from '../lib/xml';
+import xmlFormat from 'xml-formatter';
+
+const formatXmlStr = (xmlStr: string) => {
+  try {
+    return xmlFormat(xmlStr, {
+      indentation: '\t',
+      collapseContent: true,
+      lineSeparator: '\n'
+    });
+  } catch (error) {
+    return xmlStr;
+  }
+};
 
 interface StoryEditorProps {
   initialDoc: XMLDocument;
@@ -60,15 +73,22 @@ const CodeEditorWithLines = ({
   value,
   onChange,
   readOnly,
-  error
+  error,
+  actions
 }: {
   value: string;
   onChange?: (val: string) => void;
   readOnly?: boolean;
   error?: string | null;
+  actions?: React.ReactNode;
 }) => {
   return (
     <div className="flex-1 flex flex-col items-stretch relative bg-slate-950 border border-slate-800 rounded mx-1 mb-1 overflow-hidden">
+        {actions && (
+          <div className="flex justify-end p-2 border-b border-slate-800 bg-slate-900/50">
+            {actions}
+          </div>
+        )}
         <div className="flex-1 flex overflow-auto custom-scrollbar">
             {/* Line numbers gutter */}
             <div className="sticky left-0 bg-slate-900 border-r border-slate-800 text-slate-500 text-right text-xs font-mono p-4 pr-3 pt-[16px] select-none z-10 min-w-[3rem]">
@@ -107,14 +127,7 @@ const SingleEventXML = ({ event, onUpdate, editable }: { event: StoryEvent, onUp
   const getFormattedXml = () => {
     try {
         const raw = new XMLSerializer().serializeToString(event.el);
-        let formatted = '';
-        let pad = 0;
-        raw.replace(/>\s*</g, '>\n<').split('\n').forEach((node) => {
-            if (node.match(/^<\/\w/)) pad -= 1;
-            formatted += '  '.repeat(Math.max(0, pad)) + node + '\n';
-            if (node.match(/^<\w[^>]*[^\/]>.*$/) && !node.match(/<\/.+>$/)) pad += 1;
-        });
-        return formatted.trim();
+        return formatXmlStr(raw);
     } catch(e) {
         return "Error loading XML";
     }
@@ -138,8 +151,18 @@ const SingleEventXML = ({ event, onUpdate, editable }: { event: StoryEvent, onUp
         setError(err.message || "Invalid XML");
     }
   };
+  
+  const handleFormat = () => {
+    setValue(formatXmlStr(value));
+  };
 
-  return <CodeEditorWithLines value={value} onChange={editable ? handleChange : undefined} readOnly={!editable} error={error} />;
+  const formatBtn = editable ? (
+    <button onClick={handleFormat} className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors">
+      <Wand2 className="w-3 h-3" /> Format XML
+    </button>
+  ) : undefined;
+
+  return <CodeEditorWithLines value={value} onChange={editable ? handleChange : undefined} readOnly={!editable} error={error} actions={formatBtn} />;
 };
 
 const FullFileXML = ({ doc, events, editable, onUpdateFullDoc }: { doc: XMLDocument, events: StoryEvent[], editable: boolean, onUpdateFullDoc?: (doc: XMLDocument, events: StoryEvent[]) => void }) => {
@@ -163,7 +186,18 @@ const FullFileXML = ({ doc, events, editable, onUpdateFullDoc }: { doc: XMLDocum
     }
   };
 
-  return <CodeEditorWithLines value={value} onChange={editable ? handleChange : undefined} readOnly={!editable} error={error} />;
+  const handleFormat = () => {
+    const formatted = formatXmlStr(value);
+    setValue(formatted);
+  };
+
+  const formatBtn = editable ? (
+    <button onClick={handleFormat} className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors">
+      <Wand2 className="w-3 h-3" /> Format XML
+    </button>
+  ) : undefined;
+
+  return <CodeEditorWithLines value={value} onChange={editable ? handleChange : undefined} readOnly={!editable} error={error} actions={formatBtn} />;
 };
 
 export default function StoryEditor({ initialDoc, initialEvents, fileName, onClose, onError, settings, onUpdateDoc }: StoryEditorProps) {
@@ -389,6 +423,11 @@ export default function StoryEditor({ initialDoc, initialEvents, fileName, onClo
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-slate-950 flex flex-col space-y-6">
               {viewMode === 'params' ? (
                 <>
+                  <datalist id="story-events-list">
+                    {events.map(e => (
+                      <option key={e.id} value={e.name} />
+                    ))}
+                  </datalist>
                   <div className="p-5 border border-indigo-900/30 bg-slate-900/40 rounded-sm">
                       <h3 className="text-indigo-300 text-sm font-bold tracking-widest uppercase font-mono mb-4 border-b border-indigo-900/30 pb-2">{t.storyEditor.properties}</h3>
                   
@@ -422,8 +461,9 @@ export default function StoryEditor({ initialDoc, initialEvents, fileName, onClo
                           </label>
                           {selectedEvent.prereqs.map((prq, idx) => (
                               <div key={idx} className="flex gap-2">
-                                  <input type="text" value={prq} 
-                                      placeholder="e.g. Event_A, Event_B"
+                                      <input type="text" value={prq} 
+                                          list="story-events-list"
+                                          placeholder="e.g. Event_A, Event_B"
                                       onChange={(e) => {
                                           const newPrereqs = [...selectedEvent.prereqs];
                                           newPrereqs[idx] = e.target.value;

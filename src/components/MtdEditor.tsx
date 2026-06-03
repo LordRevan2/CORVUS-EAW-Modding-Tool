@@ -337,12 +337,13 @@ export default function MtdEditor({ initialIcons, fileName, initialTextureFile, 
       const mtdUrl = URL.createObjectURL(mtdBlob);
       
       const downloadFile = (url: string, name: string) => {
-        if (fileDownloadAnchorRef.current) {
-          fileDownloadAnchorRef.current.href = url;
-          fileDownloadAnchorRef.current.download = name;
-          fileDownloadAnchorRef.current.click();
-          URL.revokeObjectURL(url);
-        }
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
       };
 
       downloadFile(mtdUrl, fileName.replace(/\.[^/.]+$/, "") + ".mtd");
