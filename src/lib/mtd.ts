@@ -94,7 +94,8 @@ export function serializeMtd(icons: MtdIcon[]): ArrayBuffer {
     const icon = sortedIcons[i];
     
     // Ensure name is correct before saving
-    let finalName = icon.name.toUpperCase();
+    let finalName = icon.name.trim().toUpperCase();
+    if (!finalName) finalName = `I_BUTTON_UNKNOWN_${i}`;
     if (!finalName.endsWith(".TGA")) finalName += ".TGA";
 
     // Exact 64 byte padding

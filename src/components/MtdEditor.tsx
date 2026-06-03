@@ -29,10 +29,10 @@ export function exportTGA(canvas: HTMLCanvasElement): Blob {
   view.setUint16(12, width, true);
   view.setUint16(14, height, true);
   u8[16] = 32; // 32 bits per pixel
-  u8[17] = 8; // 8 attribute bits (alpha), Bottom-Left origin (bit 5 = 0)
+  u8[17] = 40; // 8 attribute bits (alpha), Top-Left origin (bit 5 = 1)
 
   let offset = 18;
-  for (let y = height - 1; y >= 0; y--) {
+  for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const idx = (y * width + x) * 4;
       u8[offset++] = imgData[idx + 2]; // B
