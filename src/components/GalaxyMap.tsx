@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Planet, TradeRoute, AppSettings } from '../types';
-import { ZoomIn, ZoomOut, BoxSelect } from 'lucide-react';
+import { ZoomIn, ZoomOut, BoxSelect, Image as ImageIcon, Upload, Trash2, SlidersHorizontal } from 'lucide-react';
 import { useTranslation } from '../i18n';
 
 interface GalaxyMapProps {
@@ -24,6 +24,26 @@ export default function GalaxyMap({ planets, tradeRoutes, settings, selectedPlan
   const [isPanning, setIsPanning] = useState(false);
   const lastPointerRef = useRef<{ x: number, y: number } | null>(null);
   const firstPlanetRefId = useRef<string | null>(null);
+
+  const [bgImage, setBgImage] = useState<{ url: string, width: number, height: number, x: number, y: number, opacity: number } | null>(null);
+  const [isBgSettingsOpen, setIsBgSettingsOpen] = useState(false);
+  const bgInputRef = useRef<HTMLInputElement>(null);
+
+  const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const ratio = img.width / img.height;
+        const w = baseBounds ? baseBounds.vbWidth * 1.5 : img.width;
+        const h = w / ratio;
+        setBgImage({ url, width: w, height: h, x: -(w / 2), y: -(h / 2), opacity: 0.3 });
+        setIsBgSettingsOpen(true);
+      };
+      img.src = url;
+    }
+  };
 
   useEffect(() => {
     if (planets.length === 0) return;
@@ -252,6 +272,19 @@ export default function GalaxyMap({ planets, tradeRoutes, settings, selectedPlan
             </>
           )}
 
+          {bgImage && (
+            <image 
+              href={bgImage.url} 
+              x={bgImage.x} 
+              y={bgImage.y} 
+              width={bgImage.width} 
+              height={bgImage.height} 
+              opacity={bgImage.opacity}
+              preserveAspectRatio="none"
+              className="pointer-events-none"
+            />
+          )}
+
           {/* Galactic Center (0,0) */}
           <g transform={`translate(0, 0)`}>
             <circle r={planetRadius * 0.8} className="fill-red-500/50" />
@@ -348,11 +381,82 @@ export default function GalaxyMap({ planets, tradeRoutes, settings, selectedPlan
               <button 
                 onClick={() => zoomToCenter(1 / 1.5)}
                 className="w-8 h-8 flex items-center justify-center hover:bg-cyan-500/20 text-cyan-400 transition-colors"
+                title="Zoom Out"
               >
                   <ZoomOut className="w-4 h-4" />
               </button>
+              <div className="w-px bg-cyan-800/50 mx-1"></div>
+              <button 
+                onClick={() => isBgSettingsOpen ? setIsBgSettingsOpen(false) : (bgImage ? setIsBgSettingsOpen(true) : bgInputRef.current?.click())}
+                className={`w-8 h-8 flex items-center justify-center transition-colors ${bgImage ? 'text-amber-400 hover:bg-amber-500/20' : 'text-cyan-400 hover:bg-cyan-500/20'}`}
+                title="Background Image"
+              >
+                  <ImageIcon className="w-4 h-4" />
+              </button>
+              <input type="file" ref={bgInputRef} onChange={handleBgUpload} accept="image/*" className="hidden" />
           </div>
       </div>
+
+      {isBgSettingsOpen && bgImage && (
+        <div className="absolute bottom-14 left-44 bg-slate-900 border border-slate-700 shadow-xl rounded-md p-4 w-64 z-30 font-mono text-cyan-100 flex flex-col gap-3">
+            <div className="flex items-center justify-between border-b border-slate-700 pb-2 mb-1">
+                <span className="text-[10px] tracking-widest uppercase font-bold text-slate-300 flex items-center gap-1"><SlidersHorizontal className="w-3 h-3"/> BG Config</span>
+                <button onClick={() => { setBgImage(null); setIsBgSettingsOpen(false); }} className="text-red-400 hover:text-red-300 transition-colors" title="Remove Background">
+                    <Trash2 className="w-3.5 h-3.5" />
+                </button>
+            </div>
+            
+            <div>
+               <div className="flex justify-between items-center mb-1">
+                 <label className="text-[9px] uppercase tracking-widest text-slate-500">Width</label>
+                 <input type="number" step="any" value={Number(bgImage.width.toFixed(2))} onChange={(e) => {
+                    let w = parseFloat(e.target.value);
+                    if (isNaN(w)) return;
+                    const ratio = bgImage.width / bgImage.height;
+                    setBgImage({ ...bgImage, width: w, height: w / ratio });
+                 }} className="w-16 bg-slate-950 border border-slate-700/80 focus:border-cyan-500 rounded p-1 text-xs outline-none text-right" />
+               </div>
+               <input type="range" min={baseBounds?.vbWidth ? baseBounds.vbWidth * 0.1 : 100} max={baseBounds?.vbWidth ? baseBounds.vbWidth * 5 : 5000} value={bgImage.width} onChange={(e) => {
+                  const w = parseFloat(e.target.value);
+                  const ratio = bgImage.width / bgImage.height;
+                  setBgImage({ ...bgImage, width: w, height: w / ratio });
+               }} className="w-full accent-cyan-500" />
+            </div>
+
+            <div>
+               <div className="flex justify-between items-center mb-1">
+                 <label className="text-[9px] uppercase tracking-widest text-slate-500">X Offset</label>
+                 <input type="number" step="any" value={Number(bgImage.x.toFixed(2))} onChange={(e) => {
+                    let val = parseFloat(e.target.value);
+                    if (!isNaN(val)) setBgImage({ ...bgImage, x: val });
+                 }} className="w-16 bg-slate-950 border border-slate-700/80 focus:border-cyan-500 rounded p-1 text-xs outline-none text-right" />
+               </div>
+               <input type="range" min={baseBounds ? -Math.abs(baseBounds.vbWidth * 2) : -2000} max={baseBounds ? Math.abs(baseBounds.vbWidth * 2) : 2000} value={bgImage.x} onChange={(e) => setBgImage({ ...bgImage, x: parseFloat(e.target.value) })} className="w-full accent-cyan-500" />
+            </div>
+
+            <div>
+               <div className="flex justify-between items-center mb-1">
+                 <label className="text-[9px] uppercase tracking-widest text-slate-500">Y Offset</label>
+                 <input type="number" step="any" value={Number(bgImage.y.toFixed(2))} onChange={(e) => {
+                    let val = parseFloat(e.target.value);
+                    if (!isNaN(val)) setBgImage({ ...bgImage, y: val });
+                 }} className="w-16 bg-slate-950 border border-slate-700/80 focus:border-cyan-500 rounded p-1 text-xs outline-none text-right" />
+               </div>
+               <input type="range" min={baseBounds ? -Math.abs(baseBounds.vbHeight * 2) : -2000} max={baseBounds ? Math.abs(baseBounds.vbHeight * 2) : 2000} value={bgImage.y} onChange={(e) => setBgImage({ ...bgImage, y: parseFloat(e.target.value) })} className="w-full accent-cyan-500" />
+            </div>
+
+            <div>
+               <div className="flex justify-between items-center mb-1">
+                 <label className="text-[9px] uppercase tracking-widest text-slate-500">Opacity</label>
+                 <input type="number" step="0.01" min="0" max="1" value={Number(bgImage.opacity.toFixed(2))} onChange={(e) => {
+                    let val = parseFloat(e.target.value);
+                    if (!isNaN(val)) setBgImage({ ...bgImage, opacity: val });
+                 }} className="w-16 bg-slate-950 border border-slate-700/80 focus:border-cyan-500 rounded p-1 text-xs outline-none text-right" />
+               </div>
+               <input type="range" min="0.1" max="1" step="0.01" value={bgImage.opacity} onChange={(e) => setBgImage({ ...bgImage, opacity: parseFloat(e.target.value) })} className="w-full accent-emerald-500" />
+            </div>
+        </div>
+      )}
 
       <div className="h-10 bg-slate-900/80 border-t border-cyan-800/50 px-6 flex items-center justify-between text-[10px] font-mono text-cyan-400/70 uppercase tracking-widest z-10 shrink-0">
         <div className="flex gap-8">

@@ -10,9 +10,52 @@ export interface MtdIcon {
 
 export function parseMtd(buffer: ArrayBuffer): MtdIcon[] {
   const dt = new DataView(buffer);
+  
+  if (dt.byteLength >= 4) {
+    const magic = String.fromCharCode(...new Uint8Array(buffer, 0, 4));
+    if (magic === "MTD ") {
+      // ALAMO FORMAT
+      let offset = 4;
+      const version = dt.getUint32(offset, true); offset += 4;
+      const count = dt.getUint32(offset, true); offset += 4;
+      
+      const texNameLen = dt.getUint32(offset, true); offset += 4;
+      // Skip texture name
+      offset += texNameLen;
+      
+      const icons: MtdIcon[] = [];
+      for (let i = 0; i < count; i++) {
+        if (offset + 4 > buffer.byteLength) break;
+        const nameLen = dt.getUint32(offset, true); offset += 4;
+        
+        if (offset + nameLen > buffer.byteLength) break;
+        let iconName = new TextDecoder('ascii').decode(new Uint8Array(buffer, offset, nameLen));
+        offset += nameLen;
+        // remove null if present
+        if (iconName.endsWith('\0')) iconName = iconName.slice(0, -1);
+        
+        const xLeft = dt.getFloat32(offset, true); offset += 4;
+        const yTop = dt.getFloat32(offset, true); offset += 4;
+        const xRight = dt.getFloat32(offset, true); offset += 4;
+        const yBottom = dt.getFloat32(offset, true); offset += 4;
+        
+        icons.push({
+          id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
+          name: iconName.toUpperCase(),
+          x: xLeft,
+          y: yTop,
+          width: xRight - xLeft,
+          height: yBottom - yTop,
+          alpha: true
+        });
+      }
+      return icons;
+    }
+  }
+
+  // 81-BYTE FORMAT (Community Editor)
   let offset = 0;
   
-  // EAW MTD starts with uint32 icon count
   const iconCount = dt.getUint32(offset, true);
   offset += 4;
   
@@ -20,39 +63,33 @@ export function parseMtd(buffer: ArrayBuffer): MtdIcon[] {
   const textDecoder = new TextDecoder('ascii');
   
   for (let i = 0; i < iconCount; i++) {
-    // Safety check just in case it's malformed
     if (offset + 81 > buffer.byteLength) {
-      console.warn("Malformed MTD at icon index " + i + " - offset: " + offset + ", buf: " + buffer.byteLength);
       break;
     }
     
-    // Fixed length 64-byte null-padded string
     const nameBytes = new Uint8Array(buffer, offset, 64);
     offset += 64;
     
-    // Decode and remove null terminators
     let nameStr = textDecoder.decode(nameBytes);
     const nullIdx = nameStr.indexOf('\0');
     if (nullIdx !== -1) {
       nameStr = nameStr.substring(0, nullIdx);
     }
     
-    // Read 4 x uint32 for X1, Y1, X2, Y2
-    const x1 = dt.getUint32(offset, true); offset += 4;
-    const y1 = dt.getUint32(offset, true); offset += 4;
-    const x2 = dt.getUint32(offset, true); offset += 4;
-    const y2 = dt.getUint32(offset, true); offset += 4;
+    const x = dt.getUint32(offset, true); offset += 4;
+    const y = dt.getUint32(offset, true); offset += 4;
+    const width = dt.getUint32(offset, true); offset += 4;
+    const height = dt.getUint32(offset, true); offset += 4;
     
-    // Read 1 x uint8 for alpha / flag
     const alphaByte = dt.getUint8(offset); offset += 1;
     
     icons.push({
       id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
       name: nameStr.toUpperCase(),
-      x: x1, 
-      y: y1, 
-      width: x2 - x1, 
-      height: y2 - y1,
+      x, 
+      y, 
+      width, 
+      height,
       alpha: alphaByte !== 0
     });
   }
@@ -60,57 +97,75 @@ export function parseMtd(buffer: ArrayBuffer): MtdIcon[] {
   return icons;
 }
 
-export function serializeMtd(icons: MtdIcon[]): ArrayBuffer {
-  // Ensure uniqueness - EAW and community tools crash on duplicates due to binary search
+export function serializeMtd(icons: MtdIcon[], textureName: string = "MT_CommandBar.tga"): ArrayBuffer {
+  // Ensure uniqueness
   const uniqueIcons = new Map<string, MtdIcon>();
   icons.forEach(i => {
-    uniqueIcons.set(i.name, i);
+    let name = (i.name || "").trim().toUpperCase();
+    if (!name) name = "I_BUTTON_UNKNOWN_" + crypto.randomUUID().substring(0, 8);
+    // Add extension if it lacks one (mostly they have .TGA)
+    if (!name.includes(".")) name += ".TGA";
+    uniqueIcons.set(name, { ...i, name });
   });
   
-  // EAW MTD requires icons to be strictly sorted by name (ASCII) because the engine/tools use binary search
+  // Sorted alphabetically
   const sortedIcons = Array.from(uniqueIcons.values()).sort((a, b) => {
-    let nameA = a.name.toUpperCase();
-    let nameB = b.name.toUpperCase();
-    if (!nameA.endsWith(".TGA")) nameA += ".TGA";
-    if (!nameB.endsWith(".TGA")) nameB += ".TGA";
-    if (nameA < nameB) return -1;
-    if (nameA > nameB) return 1;
+    if (a.name < b.name) return -1;
+    if (a.name > b.name) return 1;
     return 0;
   });
 
-  // calculate total size
-  // 4 bytes count + 81 bytes per icon
-  const totalSize = 4 + (sortedIcons.length * 81);
+  const encoder = new TextEncoder();
+  const texBytes = encoder.encode(textureName);
+  
+  // Header: 12 bytes
+  // Texture Name: 4 bytes (len) + texBytes.length + 1 (null byte)
+  let totalSize = 12 + 4 + texBytes.length + 1;
+
+  const iconNameBytesMap: Uint8Array[] = [];
+  
+  for (let i = 0; i < sortedIcons.length; i++) {
+    const iconBytes = encoder.encode(sortedIcons[i].name);
+    iconNameBytesMap.push(iconBytes);
+    // name len (4) + nameBytes + 1 (null byte) + 4 floats (16)
+    totalSize += 4 + iconBytes.length + 1 + 16;
+  }
   
   const buffer = new ArrayBuffer(totalSize);
   const dt = new DataView(buffer);
+  let offset = 0;
   
-  dt.setUint32(0, sortedIcons.length, true);
-  let offset = 4;
+  // Magic
+  new Uint8Array(buffer, offset, 4).set(encoder.encode("MTD ")); offset += 4;
+  // Version
+  dt.setUint32(offset, 2, true); offset += 4;
+  // Count
+  dt.setUint32(offset, sortedIcons.length, true); offset += 4;
   
-  const encoder = new TextEncoder();
+  // Texture Name
+  dt.setUint32(offset, texBytes.length + 1, true); offset += 4;
+  new Uint8Array(buffer, offset, texBytes.length).set(texBytes); offset += texBytes.length;
+  dt.setUint8(offset, 0); offset += 1; // null byte
   
   for (let i = 0; i < sortedIcons.length; i++) {
     const icon = sortedIcons[i];
+    const nameBytes = iconNameBytesMap[i];
     
-    // Ensure name is correct before saving
-    let finalName = icon.name.trim().toUpperCase();
-    if (!finalName) finalName = `I_BUTTON_UNKNOWN_${i}`;
-    if (!finalName.endsWith(".TGA")) finalName += ".TGA";
+    // Name Length and string
+    dt.setUint32(offset, nameBytes.length + 1, true); offset += 4;
+    new Uint8Array(buffer, offset, nameBytes.length).set(nameBytes); offset += nameBytes.length;
+    dt.setUint8(offset, 0); offset += 1; // null byte
+    
+    // X Left, Y Top, X Right, Y Bottom
+    const xLeft = Math.min(icon.x, icon.x + icon.width);
+    const xRight = Math.max(icon.x, icon.x + icon.width);
+    const yTop = Math.min(icon.y, icon.y + icon.height);
+    const yBottom = Math.max(icon.y, icon.y + icon.height);
 
-    // Exact 64 byte padding
-    const nameBytes = new Uint8Array(64);
-    const encodedName = encoder.encode(finalName.substring(0, 63)); // Leave 1 null
-    nameBytes.set(encodedName, 0);
-    
-    new Uint8Array(buffer, offset, 64).set(nameBytes);
-    offset += 64;
-    
-    dt.setUint32(offset, Math.round(Math.max(0, icon.x)), true); offset += 4;
-    dt.setUint32(offset, Math.round(Math.max(0, icon.y)), true); offset += 4;
-    dt.setUint32(offset, Math.round(Math.max(0, icon.x + icon.width)), true); offset += 4;
-    dt.setUint32(offset, Math.round(Math.max(0, icon.y + icon.height)), true); offset += 4;
-    dt.setUint8(offset, icon.alpha ? 1 : 0); offset += 1;
+    dt.setFloat32(offset, xLeft, true); offset += 4;
+    dt.setFloat32(offset, yTop, true); offset += 4;
+    dt.setFloat32(offset, xRight, true); offset += 4;
+    dt.setFloat32(offset, yBottom, true); offset += 4;
   }
   
   return buffer;

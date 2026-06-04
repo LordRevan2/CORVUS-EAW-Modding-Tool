@@ -20,7 +20,7 @@ export function exportTGA(canvas: HTMLCanvasElement): Blob {
   const height = canvas.height;
   const imgData = ctx!.getImageData(0, 0, width, height).data;
 
-  const buffer = new ArrayBuffer(18 + width * height * 4);
+  const buffer = new ArrayBuffer(18 + (width * height * 4) + 26);
   const view = new DataView(buffer);
   const u8 = new Uint8Array(buffer);
 
@@ -29,7 +29,7 @@ export function exportTGA(canvas: HTMLCanvasElement): Blob {
   view.setUint16(12, width, true);
   view.setUint16(14, height, true);
   u8[16] = 32; // 32 bits per pixel
-  u8[17] = 40; // 8 attribute bits (alpha), Top-Left origin (bit 5 = 1)
+  u8[17] = 40; // 8 alpha bits, Top-Left origin (bit 5 = 1) -> 32 + 8 = 40
 
   let offset = 18;
   for (let y = 0; y < height; y++) {
@@ -40,6 +40,12 @@ export function exportTGA(canvas: HTMLCanvasElement): Blob {
       u8[offset++] = imgData[idx + 0]; // R
       u8[offset++] = imgData[idx + 3]; // A
     }
+  }
+
+  // TGA 2.0 Signature Footer
+  const signature = "TRUEVISION-XFILE.";
+  for (let i = 0; i < signature.length; i++) {
+    u8[offset + 8 + i] = signature.charCodeAt(i);
   }
 
   return new Blob([buffer], { type: 'application/octet-stream' });
@@ -55,12 +61,25 @@ interface MtdEditorProps {
 
 export default function MtdEditor({ initialIcons, fileName, initialTextureFile, onClose, onError }: MtdEditorProps) {
   const t = useTranslation();
-  const [icons, setIcons] = useState<MtdIcon[]>(initialIcons);
+  
+  const sortIcons = (iconsToSort: MtdIcon[]) => {
+    return [...iconsToSort].sort((a,b) => {
+      const nameA = (a.name || "").toUpperCase();
+      const nameB = (b.name || "").toUpperCase();
+      if (nameA < nameB) return -1;
+      if (nameA > nameB) return 1;
+      return 0;
+    });
+  };
+
+  const [icons, setIcons] = useState<MtdIcon[]>(sortIcons(initialIcons));
   const [selectedId, setSelectedId] = useState<string | null>(initialIcons.length > 0 ? initialIcons[0].id : null);
   const [searchQuery, setSearchQuery] = useState('');
   const [textureUrl, setTextureUrl] = useState<string | null>(null);
   const [textureSize, setTextureSize] = useState<{w: number, h: number} | null>(null);
   
+  const [scale, setScale] = useState(1);
+
   // Handle initial texture load
   useEffect(() => {
     if (initialTextureFile) {
@@ -72,8 +91,12 @@ export default function MtdEditor({ initialIcons, fileName, initialTextureFile, 
             const tga = new TGA();
             tga.load(new Uint8Array(reader.result as ArrayBuffer));
             const url = tga.getDataURL('image/png');
-            setTextureUrl(url);
-            setTextureSize({ w: tga.header.width, h: tga.header.height });
+            const img = new Image();
+            img.onload = () => {
+              setTextureSize({ w: img.width, h: img.height });
+              setTextureUrl(url);
+            };
+            img.src = url;
           } catch (err: any) {
             onError("Error reading initial TGA: " + err.message);
           }
@@ -95,6 +118,11 @@ export default function MtdEditor({ initialIcons, fileName, initialTextureFile, 
   }, [initialTextureFile, onError]);
 
   const [pendingUpload, setPendingUpload] = useState<{ img: HTMLImageElement, w: number, h: number } | null>(null);
+  const [pendingRectUpload, setPendingRectUpload] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
+
+  const [drawingStart, setDrawingStart] = useState<{ x: number, y: number } | null>(null);
+  const [drawingCurrent, setDrawingCurrent] = useState<{ x: number, y: number } | null>(null);
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
 
   const [pendingIconName, setPendingIconName] = useState("");
 
@@ -116,8 +144,12 @@ export default function MtdEditor({ initialIcons, fileName, initialTextureFile, 
           const tga = new TGA();
           tga.load(new Uint8Array(reader.result as ArrayBuffer));
           const url = tga.getDataURL('image/png');
-          setTextureUrl(url);
-          setTextureSize({ w: tga.header.width, h: tga.header.height });
+          const img = new Image();
+          img.onload = () => {
+             setTextureSize({ w: img.width, h: img.height });
+             setTextureUrl(url);
+          };
+          img.src = url;
         } catch (err: any) {
           onError("Error reading TGA: " + err.message);
         }
@@ -166,7 +198,13 @@ export default function MtdEditor({ initialIcons, fileName, initialTextureFile, 
         id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
         name, x: 0, y: 0, width: w, height: h, alpha: true
       };
-      setIcons(prev => [newIcon, ...prev]);
+      
+      if (icons.some(i => i.name === newIcon.name)) {
+        onError(`An icon named '${newIcon.name}' already exists.`);
+        return;
+      }
+
+      setIcons(prev => sortIcons([...prev, newIcon]));
       setSelectedId(newIcon.id);
       setSearchQuery('');
       setPendingUpload(null);
@@ -211,12 +249,14 @@ export default function MtdEditor({ initialIcons, fileName, initialTextureFile, 
         let finalH = atlasH;
 
         if (!found) {
-          const maxUsedY = icons.reduce((max, icon) => Math.max(max, icon.y + icon.height), 0);
+          // EAW engine strictly relies on 2048 heights usually.
+          // Appending to Y > 2048 crashes the game heavily!
+          // We will place it at 0,0 and alert the user to manually make space.
           bestX = 0;
-          bestY = maxUsedY;
+          bestY = 0;
           
-          let targetH = maxUsedY + h;
-          let targetW = Math.max(atlasW, w);
+          let targetH = atlasH;
+          let targetW = atlasW;
           
           // EAW Textures MUST be power of two
           const getNextPowerOfTwo = (n: number) => {
@@ -225,8 +265,12 @@ export default function MtdEditor({ initialIcons, fileName, initialTextureFile, 
              return p;
           };
           
-          finalH = getNextPowerOfTwo(Math.max(atlasH, targetH));
-          finalW = getNextPowerOfTwo(Math.max(atlasW, targetW));
+          const finalWCalc = getNextPowerOfTwo(Math.max(atlasW, targetW));
+          const finalHCalc = getNextPowerOfTwo(Math.max(atlasH, targetH));
+          finalW = finalWCalc;
+          finalH = finalHCalc;
+          
+          alert(`Warning: The atlas is fully packed. The texture was placed at 0,0 overlapping existing icons. EAW engines crash if Y coordinates exceed 2048. You MUST manually make room by deleting an old icon or adjust the coordinates manually!`);
         }
 
         const canvas = document.createElement('canvas');
@@ -247,13 +291,40 @@ export default function MtdEditor({ initialIcons, fileName, initialTextureFile, 
           id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
           name, x: bestX, y: bestY, width: w, height: h, alpha: true
         };
-        setIcons(prev => [newIcon, ...prev]);
+        
+        if (icons.some(i => i.name === newIcon.name)) {
+          onError(`An icon named '${newIcon.name}' already exists.`);
+          return;
+        }
+
+        setIcons(prev => sortIcons([...prev, newIcon]));
         setSelectedId(newIcon.id);
         setSearchQuery('');
         setPendingUpload(null);
       };
       atlasImg.src = textureUrl;
     }
+  };
+
+  const confirmRectUpload = () => {
+    if (!pendingRectUpload) return;
+    const { x, y, w, h } = pendingRectUpload;
+    const name = pendingIconName || "I_BUTTON_NEW";
+    const newIcon: MtdIcon = {
+      id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
+      name, x, y, width: w, height: h, alpha: true
+    };
+    
+    if (icons.some(i => i.name === newIcon.name)) {
+       onError(`An icon named '${newIcon.name}' already exists.`);
+       return;
+    }
+
+    setIcons(prev => sortIcons([...prev, newIcon]));
+    setSelectedId(newIcon.id);
+    setSearchQuery('');
+    setPendingRectUpload(null);
+    setIsDrawingMode(false);
   };
 
   const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -306,7 +377,17 @@ export default function MtdEditor({ initialIcons, fileName, initialTextureFile, 
   };
 
   const handleUpdate = (id: string, updates: Partial<MtdIcon>) => {
-    setIcons(prev => prev.map(icon => icon.id === id ? { ...icon, ...updates } : icon));
+    if (updates.name !== undefined) {
+      if (icons.some(i => i.name === updates.name && i.id !== id)) {
+        onError(`An icon named '${updates.name}' already exists.`);
+        return;
+      }
+    }
+    setIcons(prev => {
+      const next = prev.map(icon => icon.id === id ? { ...icon, ...updates } : icon);
+      if (updates.name !== undefined) return sortIcons(next);
+      return next;
+    });
   };
 
   const handleDelete = (id: string) => {
@@ -332,7 +413,28 @@ export default function MtdEditor({ initialIcons, fileName, initialTextureFile, 
 
   const saveMtd = () => {
     try {
-      const buffer = serializeMtd(icons);
+      const invalidIcons = icons.filter(i => i.width === 0 || i.height === 0);
+      if (invalidIcons.length > 0) {
+         if (!window.confirm(`Warning: There are ${invalidIcons.length} icons with 0 width or height (e.g. ${invalidIcons[0].name}). They will be invisible in game. Do you wish to continue saving?`)) {
+             return;
+         }
+      }
+      
+      if (textureSize) {
+         const outOfBounds = icons.filter(i => 
+             i.x < 0 || i.y < 0 || 
+             (i.x + i.width) > textureSize.w || 
+             (i.y + i.height) > textureSize.h
+         );
+         if (outOfBounds.length > 0) {
+             if (!window.confirm(`Critical Warning: ${outOfBounds.length} icon(s) exceed the texture bounds (${textureSize.w}x${textureSize.h}). (e.g. ${outOfBounds[0].name}). This WILL crash the game engine. Continue anyway?`)) {
+                 return;
+             }
+         }
+      }
+      
+      const textureName = fileName.replace(/\.[^/.]+$/, "") + ".tga";
+      const buffer = serializeMtd(icons, textureName);
       const mtdBlob = new Blob([buffer], { type: 'application/octet-stream' });
       const mtdUrl = URL.createObjectURL(mtdBlob);
       
@@ -432,8 +534,8 @@ export default function MtdEditor({ initialIcons, fileName, initialTextureFile, 
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Main Area - Table */}
-        <div className="flex-1 bg-[#0b0f19] flex flex-col border-r border-slate-800">
+        {/* Left Area - Table */}
+        <div className="w-80 bg-[#0b0f19] flex flex-col border-r border-slate-800 shrink-0">
           <div className="px-4 py-3 flex items-center justify-between shadow-sm bg-slate-950/40 border-b border-slate-800/80 shrink-0">
             <div className="relative w-64">
               <Search className="absolute left-2.5 top-[8px] w-3.5 h-3.5 text-slate-500" />
@@ -507,6 +609,108 @@ export default function MtdEditor({ initialIcons, fileName, initialTextureFile, 
           </div>
         </div>
 
+        {/* Center Canvas Area (MegaTexture Map) */}
+        <div className="flex-1 overflow-auto bg-[#050810] relative flex justify-center" style={{ 
+          backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', 
+          backgroundSize: '20px 20px' 
+        }}>
+           
+           <div className="absolute top-4 right-4 z-50 flex flex-col bg-slate-900 border border-slate-700 rounded shadow-lg overflow-hidden font-mono text-cyan-200">
+             <button
+                onClick={() => setIsDrawingMode(!isDrawingMode)}
+                className={`px-3 py-1.5 border-b border-slate-700 text-[10px] tracking-widest uppercase transition-colors ${isDrawingMode ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'hover:bg-cyan-900/40 text-slate-400'}`}
+                title="Draw new icon box"
+             >
+                DRAW
+             </button>
+             <button onClick={() => setScale(s => Math.min(s * 1.5, 4))} className="px-3 py-1.5 hover:bg-cyan-900/40 border-b border-slate-700">+</button>
+             <div className="px-3 py-1.5 text-[10px] text-center bg-slate-950 border-b border-slate-700">{Math.round(scale * 100)}%</div>
+             <button onClick={() => setScale(s => Math.max(s / 1.5, 0.1))} className="px-3 py-1.5 hover:bg-cyan-900/40">-</button>
+           </div>
+
+           <div 
+             className={`relative origin-top-left shadow-2xl mx-auto my-12 ${isDrawingMode ? 'cursor-crosshair' : ''}`}
+             onPointerDown={(e) => {
+               if (!isDrawingMode || !textureUrl) return;
+               e.currentTarget.setPointerCapture(e.pointerId);
+               const rect = e.currentTarget.getBoundingClientRect();
+               const x = (e.clientX - rect.left) / scale;
+               const y = (e.clientY - rect.top) / scale;
+               setDrawingStart({ x, y });
+               setDrawingCurrent({ x, y });
+             }}
+             onPointerMove={(e) => {
+               if (!isDrawingMode || !drawingStart) return;
+               const rect = e.currentTarget.getBoundingClientRect();
+               const x = (e.clientX - rect.left) / scale;
+               const y = (e.clientY - rect.top) / scale;
+               setDrawingCurrent({ x, y });
+             }}
+             onPointerUp={(e) => {
+               if (!isDrawingMode || !drawingStart || !drawingCurrent) return;
+               e.currentTarget.releasePointerCapture(e.pointerId);
+               const x = Math.round(Math.min(drawingStart.x, drawingCurrent.x));
+               const y = Math.round(Math.min(drawingStart.y, drawingCurrent.y));
+               const w = Math.round(Math.abs(drawingCurrent.x - drawingStart.x));
+               const h = Math.round(Math.abs(drawingCurrent.y - drawingStart.y));
+               setDrawingStart(null);
+               setDrawingCurrent(null);
+               if (w > 2 && h > 2) {
+                 setPendingRectUpload({ x, y, w, h });
+                 setPendingIconName("I_BUTTON_NEW_ICON");
+               }
+             }}
+             style={{
+               width: textureSize?.w || 2048,
+               height: textureSize?.h || 2048,
+               backgroundImage: textureUrl ? `url(${textureUrl})` : 'none',
+               backgroundColor: textureUrl ? 'transparent' : '#0f172a',
+               backgroundSize: '100% 100%',
+               backgroundRepeat: 'no-repeat',
+               imageRendering: 'pixelated',
+               transform: `scale(${scale})`
+             }}
+           >
+              {textureUrl && filteredIcons.map(icon => {
+                 const isSelected = selectedId === icon.id;
+                 return (
+                   <div
+                     key={icon.id}
+                     onClick={() => !isDrawingMode && setSelectedId(icon.id)}
+                     className={`absolute border transition-colors ${!isDrawingMode ? 'cursor-pointer' : 'pointer-events-none'} group ${isSelected ? 'border-cyan-400 bg-cyan-400/20 z-10' : 'border-indigo-500/50 hover:border-indigo-400 hover:bg-indigo-400/10'}`}
+                     style={{
+                       left: icon.x,
+                       top: icon.y,
+                       width: icon.width,
+                       height: icon.height
+                     }}
+                   >
+                      <span className="hidden group-hover:block absolute -top-5 left-0 bg-slate-900 border border-indigo-500/50 text-[9px] text-cyan-200 px-1 py-0.5 font-mono whitespace-nowrap z-50">
+                         {icon.name}
+                      </span>
+                   </div>
+                 )
+              })}
+              {drawingStart && drawingCurrent && (
+                 <div
+                   className="absolute border border-dashed border-emerald-400 bg-emerald-400/20 z-50 pointer-events-none"
+                   style={{
+                     left: Math.min(drawingStart.x, drawingCurrent.x),
+                     top: Math.min(drawingStart.y, drawingCurrent.y),
+                     width: Math.abs(drawingCurrent.x - drawingStart.x),
+                     height: Math.abs(drawingCurrent.y - drawingStart.y)
+                   }}
+                 />
+              )}
+              {!textureUrl && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-700 font-mono text-sm uppercase tracking-widest">
+                      <ImageOff className="w-12 h-12 mb-4 opacity-50" />
+                      {t.mtdEditor.loadTexturePreview || 'Load a texture atlas to view map'}
+                  </div>
+              )}
+           </div>
+        </div>
+
         {/* Right Sidebar - Specific Icon Editor */}
         <div className="w-[340px] bg-slate-950 flex flex-col z-20 shrink-0 shadow-[-4px_0_15px_rgba(0,0,0,0.2)]">
           <div className="h-10 border-b border-slate-800 bg-slate-900/50 flex items-center px-4 justify-between shrink-0">
@@ -526,7 +730,7 @@ export default function MtdEditor({ initialIcons, fileName, initialTextureFile, 
                     const xPx = selectedIcon.x;
                     const yPx = selectedIcon.y;
                     
-                    const validSize = wPx > 0 && hPx > 0 && wPx < 2000 && hPx < 2000;
+                    const validSize = wPx > 0 && hPx > 0 && wPx <= 8192 && hPx <= 8192;
                     
                     return validSize ? (
                       <div 
@@ -675,6 +879,49 @@ export default function MtdEditor({ initialIcons, fileName, initialTextureFile, 
                 className="px-4 py-2 bg-emerald-600/90 hover:bg-emerald-500 text-white rounded font-mono text-[11px] uppercase tracking-wider font-semibold shadow-lg shadow-emerald-900/20 transition-all border border-emerald-400/30"
               >
                 {t.mtdEditor.addIconBtn || 'Add Icon'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Pending Rect Upload Modal */}
+      {pendingRectUpload && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 p-4 font-sans backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl p-6 max-w-sm w-full relative">
+            <button 
+              onClick={() => { setPendingRectUpload(null); setIsDrawingMode(false); }}
+              className="absolute top-4 right-4 text-slate-500 hover:text-slate-300"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-slate-100 text-lg font-bold mb-4 font-mono tracking-widest uppercase">Name Drawn Icon</h3>
+            <div className="mb-6">
+              <label className="block text-[10px] uppercase tracking-widest text-cyan-500 font-bold font-mono mb-2">
+                {t.mtdEditor.editor.idName || 'Icon Name'}
+              </label>
+              <input 
+                type="text" 
+                value={pendingIconName}
+                onChange={(e) => setPendingIconName(e.target.value.toUpperCase())}
+                className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-500 rounded p-3 text-sm font-mono text-cyan-100 outline-none transition-colors shadow-inner uppercase"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') confirmRectUpload();
+                }}
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => { setPendingRectUpload(null); setIsDrawingMode(false); }}
+                className="px-4 py-2 text-slate-400 hover:bg-slate-800 rounded font-mono text-[11px] uppercase tracking-wider font-semibold transition-colors"
+              >
+                {t.mtdEditor.cancelBtn || 'Cancel'}
+              </button>
+              <button
+                onClick={confirmRectUpload}
+                className="px-4 py-2 bg-indigo-600/90 hover:bg-indigo-500 text-white rounded font-mono text-[11px] uppercase tracking-wider font-semibold shadow-lg shadow-indigo-900/20 transition-all border border-indigo-400/30"
+              >
+                CREATE
               </button>
             </div>
           </div>

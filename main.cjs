@@ -8,35 +8,54 @@ autoUpdater.autoInstallOnAppQuit = true;
 
 let win;
 
-function createWindow() {
-  win = new BrowserWindow({
-    width: 1280,
-    height: 800,
-    title: "CORVUS // EAW Modding Tool",
-    autoHideMenuBar: true, // Oculta la barra de menú predeterminada de Windows
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
+// Prevenir múltiples instancias
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
     }
   });
 
-  // En producción (cuando creas el .exe), carga el index.html ya compilado
-  if (app.isPackaged) {
-    win.loadFile(path.join(__dirname, 'dist', 'index.html'));
-  } else {
-    // En desarrollo local
-    win.loadURL('http://localhost:3000');
+  function createWindow() {
+    win = new BrowserWindow({
+      width: 1280,
+      height: 800,
+      minWidth: 1024,
+      minHeight: 768,
+      title: "CORVUS // EAW Modding Tool",
+      backgroundColor: '#0f172a',
+      autoHideMenuBar: true,
+      show: false, // No mostrar hasta que esté listo (prevenir parpadeo blanco)
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    });
+
+    if (app.isPackaged) {
+      win.loadFile(path.join(__dirname, 'dist', 'index.html'));
+    } else {
+      win.loadURL('http://localhost:3000');
+    }
+
+    win.once('ready-to-show', () => {
+      win.show();
+    });
   }
+
+  app.whenReady().then(() => {
+    createWindow();
+
+    if (app.isPackaged) {
+      autoUpdater.checkForUpdatesAndNotify();
+    }
+  });
 }
-
-app.whenReady().then(() => {
-  createWindow();
-
-  // Comprobar actualizaciones automáticamente al iniciar
-  if (app.isPackaged) {
-    autoUpdater.checkForUpdates();
-  }
-});
 
 // --- Eventos de electron-updater ---
 autoUpdater.on('checking-for-update', () => {

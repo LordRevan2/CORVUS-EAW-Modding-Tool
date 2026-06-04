@@ -1,7 +1,7 @@
 {
   "name": "corvus-eaw-modding-tool",
   "private": true,
-  "version": "2.0.11",
+  "version": "2.0.12",
   "type": "module",
   "main": "main.cjs",
   "repository": {
@@ -33,9 +33,6 @@
       "shortcutName": "CORVUS",
       "installerIcon": "public/icon.ico",
       "uninstallerIcon": "public/icon.ico",
-      "installerSidebar": "build/installerSidebar.png",
-      "installerHeader": "build/installerHeader.png",
-      "uninstallerSidebar": "build/installerSidebar.png",
       "uninstallDisplayName": "CORVUS // EAW Modding Tool",
       "allowElevation": true
     },
@@ -54,8 +51,11 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "electron:start": "electron .",
-    "electron:build": "node generate_icon.js && npm run build && electron-builder --win",
-    "electron:publish": "node generate_icon.js && npm run build && electron-builder --win -p always"
+    "electron:build:win": "npm run build && electron-builder --win",
+    "electron:build:mac": "npm run build && electron-builder --mac",
+    "electron:build:linux": "npm run build && electron-builder --linux",
+    "electron:build:all": "npm run build && electron-builder --win --mac --linux",
+    "electron:publish": "npm run build && electron-builder --win --publish always"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -69,6 +69,7 @@
     "luaparse": "^0.3.1",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
+    "node-unrar-js": "^2.0.2",
     "prismjs": "^1.30.0",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
@@ -81,8 +82,9 @@
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",
-    "electron": "^42.3.0",
+    "electron": "^42.3.3",
     "electron-builder": "^26.8.1",
+    "electron-is-dev": "^3.0.1",
     "esbuild": "^0.25.0",
     "jimp": "^1.6.1",
     "sharp": "^0.34.5",

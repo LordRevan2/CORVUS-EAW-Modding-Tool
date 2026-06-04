@@ -21,22 +21,18 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
     {id: 'planets', label: '3. Planet Editor', icon: MapPin},
     {id: 'routes', label: '4. Route Editor', icon: Radio},
     {id: 'translations', label: '5. Translations (.DAT)', icon: FileText},
-    {id: 'mtd', label: '6. Sprite Atlas (.MTD)', icon: ImageIcon},
-    {id: 'story', label: '7. Story Editor (.XML)', icon: Book},
-    {id: 'settings', label: '8. Map Options', icon: SettingsIcon},
-    {id: 'updates', label: '9. Updates', icon: RefreshCw},
-    {id: 'export', label: '10. Save & Export', icon: Download},
+    {id: 'settings', label: '6. Map Options', icon: SettingsIcon},
+    {id: 'updates', label: '7. Updates', icon: RefreshCw},
+    {id: 'export', label: '8. Save & Export', icon: Download},
   ] : [
     {id: 'intro', label: '1. Introducción', icon: BookOpen},
     {id: 'import', label: '2. Importar Archivos', icon: Layers},
     {id: 'planets', label: '3. Editor de Planetas', icon: MapPin},
     {id: 'routes', label: '4. Editor de Rutas', icon: Radio},
     {id: 'translations', label: '5. Traducciones (.DAT)', icon: FileText},
-    {id: 'mtd', label: '6. Atlas Texturas (.MTD)', icon: ImageIcon},
-    {id: 'story', label: '7. Editor de Historia (.XML)', icon: Book},
-    {id: 'settings', label: '8. Opciones de Mapa', icon: SettingsIcon},
-    {id: 'updates', label: '9. Actualizaciones', icon: RefreshCw},
-    {id: 'export', label: '10. Guardar y Exportar', icon: Download},
+    {id: 'settings', label: '6. Opciones de Mapa', icon: SettingsIcon},
+    {id: 'updates', label: '7. Actualizaciones', icon: RefreshCw},
+    {id: 'export', label: '8. Guardar y Exportar', icon: Download},
   ];
 
   return (
@@ -243,6 +239,19 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
 
                 <div className="space-y-1.5 text-xs text-slate-300">
                   <div className="p-2.5 bg-slate-950/60 font-mono text-xs border border-slate-800 flex items-center justify-between">
+                    <span>{isEn ? "Background Images / Blueprints:" : "Plantillas / Imágenes de Fondo:"}</span>
+                    <span className="text-[10px] bg-amber-950 text-amber-400 py-0.5 px-2 border border-amber-800">UI GUIDES</span>
+                  </div>
+                  <p className="pl-2.5 text-slate-400 leading-relaxed">
+                    {isEn
+                      ? <>You can now upload a custom background image map directly into the web viewer. This allows you to visually align and position planets based on any external galaxy blueprint map overlay, using fractional float parameters to modify the image's opacity, scale, and X/Y offset perfectly.</>
+                      : <>Ahora puedes cargar una imagen de mapa como fondo base en el visor. Esto te permite orientar de manera visual los mundos sobre tu plantilla o plano ideal que tengas del lore, ajustando su tamaño, posición y nivel de opacidad (opacity) en decimales precisos.</>
+                    }
+                  </p>
+                </div>
+
+                <div className="space-y-1.5 text-xs text-slate-300">
+                  <div className="p-2.5 bg-slate-950/60 font-mono text-xs border border-slate-800 flex items-center justify-between">
                     <span>{isEn ? "Stellar Infrastructure Settings:" : "Configuración de Infraestructura Estelar:"}</span>
                     <span className="text-[10px] bg-cyan-950 text-cyan-400 py-0.5 px-2 border border-cyan-800">XML NODE EDITS</span>
                   </div>
@@ -321,88 +330,6 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
                     </span>
                     <p className="text-slate-400 leading-relaxed">
                       {isEn ? "Select a key to edit its localized text. A byte size metric is included to ensure limits for large text descriptions are correctly formatted. Use normal \\n line breaks for proper in-game paragraph rendering." : "Selecciona una clave para editar su texto localizado. Se incluye una métrica de tamaño de bytes para controlar límites en descripciones largas. Usa saltos de línea \\n para renderizar párrafos correctamente en el juego."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'mtd' && (
-              <div className="space-y-4 animate-fade-in">
-                <h3 className="text-base font-bold text-cyan-400 uppercase tracking-wider border-b border-cyan-800 pb-2">
-                  {isEn ? "6. Icon Atlas Mapping (.MTD)" : "6. Mapeo de Texturas (.MTD)"}
-                </h3>
-                <p className="text-xs leading-relaxed text-slate-300">
-                  {isEn
-                    ? "The MegaTexture Database Editor (.MTD) enables you to map 2D bounds to UI elements over master texture atlases. Perfect for setting up custom ability icons or tactical elements."
-                    : "El Editor de Base de Datos MegaTextura (.MTD) te permite mapear las fronteras UV 2D de elementos de Interfaz sobre el atlas maestro. Ideal para ubicar iconos de héroe."
-                  }
-                </p>
-
-                <div className="bg-slate-900 border border-amber-900/40 p-4 rounded-sm space-y-3">
-                  <div className="flex items-start space-x-3">
-                    <div className="mt-1 opacity-70">
-                      <ImageIcon className="w-4 h-4 text-amber-500" />
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-bold text-amber-400 block mb-0.5">
-                        {isEn ? "Loading Context" : "Conteo Visual de Referencia"}
-                      </span>
-                      <p className="text-[11px] text-slate-400">
-                        {isEn
-                          ? "Load your .MTD file, then click 'Load Texture' to visually overlay the boundaries onto your .TGA / .PNG icon grid image. (If you use the Workspace loader, the texture is automatically found and mapped)."
-                          : "Carga tu archivo .MTD y oprime 'Cargar Textura' para superponer los cuadros UV sobre el gráfico tga y poder orientarte correctamente. (Si se carga vía Workspace, se auto-detecta la textura)."
-                        }
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="mt-1 opacity-70">
-                      <SettingsIcon className="w-4 h-4 text-cyan-500" />
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-bold text-cyan-400 block mb-0.5">
-                        {isEn ? "Precision & UV Coords" : "Precisión y Coordenadas UV"}
-                      </span>
-                      <p className="text-[11px] text-slate-400">
-                        {isEn
-                          ? "The MTD natively uses precise X,Y,Width,Height pixel boundaries. However, an 'Expert UV' panel shows the equivalent Float points (0.0 to 1.0) automatically."
-                          : "El MTD nativamente usa fronteras de píxeles exactas (X,Y,Ancho,Alto). Ahora existe un panel Experto UV que calcula las fracciones 0.0 - 1.0 automáticamente para referencia del motor gráfico."
-                        }
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'story' && (
-              <div className="space-y-4 animate-fade-in">
-                <h3 className="text-base font-bold text-cyan-400 uppercase tracking-wider border-b border-cyan-800 pb-2">
-                  {isEn ? "7. Story Editor (.XML)" : "7. Editor de Historia (.XML)"}
-                </h3>
-                <p className="text-xs leading-relaxed text-slate-300">
-                  {isEn
-                    ? "The Story Editor allows you to load, orchestrate, and visualize complex Lua and XML campaign events (Story_Plots). A crucial feature for pacing the strategic conquest."
-                    : "El Editor de Historia permite ver, añadir y orquestar eventos de campaña (Story_Plots) de Lua y XML. Una herramienta esencial para organizar eventos narrativos y misiones en las tablas."
-                  }
-                </p>
-
-                <div className="bg-slate-950/50 border border-slate-800 p-4 rounded-sm text-xs space-y-3">
-                  <div>
-                    <span className="text-[10px] uppercase font-mono text-cyan-400 block font-bold mb-1">
-                      {isEn ? "Sequential Events" : "Eventos Secuenciales"}
-                    </span>
-                    <p className="text-slate-400 leading-relaxed">
-                      {isEn ? "Story files consist of Event chains. You can add new events, define triggers (e.g., STORY_CONSTRUCT), and chain them properly utilizing pre-requisites." : "Los archivos de historia están compuestos por cadenas de eventos. Puedes añadir nuevos eventos, definir detonantes (p.e. STORY_CONSTRUCT) y encadenarlos con pre-requisitos."}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-mono text-cyan-400 block font-bold mb-1">
-                      {isEn ? "Visualization" : "Visualización"}
-                    </span>
-                    <p className="text-slate-400 leading-relaxed">
-                      {isEn ? "Use the intuitive forms to modify conditions, reward units, or zoom into specific plot points." : "Usa los formularios intuitivos para cambiar parámetros, definir recompensas, o inspeccionar nudos de la trama."}
                     </p>
                   </div>
                 </div>

@@ -916,11 +916,11 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
              </div>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center px-4 relative overflow-y-auto">
+          <div className="flex-1 flex flex-col items-center text-center px-4 relative overflow-y-auto pt-12 pb-12">
             <div className="absolute inset-0 opacity-20 pointer-events-none" 
                  style={{ backgroundImage: 'radial-gradient(#22d3ee 0.5px, transparent 0.5px)', backgroundSize: '30px 30px' }}></div>
             
-            <div className="max-w-4xl w-full flex flex-col items-center justify-center relative z-10 py-8">
+            <div className="max-w-4xl w-full flex flex-col items-center relative z-10 mt-8">
               <div className="mb-8 max-w-xl text-center">
                 <div className="w-10 h-10 bg-cyan-500/10 border border-cyan-500/40 rounded-sm flex items-center justify-center mx-auto mb-4 rotate-45">
                   <div className="w-5 h-5 border-2 border-cyan-400"></div>
@@ -981,10 +981,10 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
                 )}
               </div>
 
-              {/* Grid Layout (3 Columns) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full mb-8">
+              {/* Horizontal Scroll Layout for Tools */}
+              <div className="flex overflow-x-auto gap-6 w-full max-w-6xl mb-8 pb-4 custom-scrollbar snap-x snap-mandatory px-2">
                 {/* XML Planet Database */}
-                <div className="bg-slate-900/40 p-6 border border-cyan-800/30 rounded flex flex-col justify-between text-left hover:border-cyan-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(6,182,212,0.02)]">
+                <div className="w-[300px] md:w-[320px] shrink-0 snap-center bg-slate-900/40 p-6 border border-cyan-800/30 rounded flex flex-col justify-between text-left hover:border-cyan-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(6,182,212,0.02)]">
                   <div>
                     <div className="flex items-center space-x-2.5 mb-3">
                       <Globe className="w-5 h-5 text-cyan-400 group-hover:animate-pulse" />
@@ -1021,7 +1021,7 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
                 </div>
 
                 {/* Story Editor */}
-                <div className="hidden bg-slate-900/40 p-6 border border-emerald-900/30 rounded flex flex-col justify-between text-left hover:border-emerald-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(16,185,129,0.02)]">
+                <div className="hidden w-[300px] md:w-[320px] shrink-0 snap-center bg-slate-900/40 p-6 border border-emerald-900/30 rounded flex flex-col justify-between text-left hover:border-emerald-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(16,185,129,0.02)]">
                   <div>
                     <div className="flex items-center space-x-2.5 mb-3">
                       <BookOpen className="w-5 h-5 text-emerald-400 group-hover:animate-pulse" />
@@ -1065,7 +1065,7 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
                 </div>
 
                 {/* DAT Translation Tool */}
-                <div className="bg-slate-900/40 p-6 border border-purple-900/30 rounded flex flex-col justify-between text-left hover:border-purple-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(168,85,247,0.02)]">
+                <div className="w-[300px] md:w-[320px] shrink-0 snap-center bg-slate-900/40 p-6 border border-purple-900/30 rounded flex flex-col justify-between text-left hover:border-purple-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(168,85,247,0.02)]">
                   <div>
                     <div className="flex items-center space-x-2.5 mb-3">
                       <FileText className="w-5 h-5 text-purple-400 group-hover:animate-pulse" />
@@ -1109,7 +1109,7 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
                 </div>
 
                 {/* MTD Texture Tool */}
-                <div className="bg-slate-900/40 p-6 border border-amber-900/30 rounded flex flex-col justify-between text-left hover:border-amber-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(245,158,11,0.02)]">
+                <div className="hidden w-[300px] md:w-[320px] shrink-0 snap-center bg-slate-900/40 p-6 border border-amber-900/30 rounded flex flex-col justify-between text-left hover:border-amber-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(245,158,11,0.02)]">
                   <div>
                     <div className="flex items-center space-x-2.5 mb-3">
                       <SettingsIcon className="w-5 h-5 text-amber-400 group-hover:animate-pulse" />
@@ -1147,7 +1147,7 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
                 </div>
 
                 {/* Unit Balance Editor */}
-                <div className="hidden bg-slate-900/40 p-6 border border-emerald-900/30 rounded flex flex-col justify-between text-left hover:border-emerald-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(16,185,129,0.02)]">
+                <div className="hidden w-[300px] md:w-[320px] shrink-0 snap-center bg-slate-900/40 p-6 border border-emerald-900/30 rounded flex flex-col justify-between text-left hover:border-emerald-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(16,185,129,0.02)]">
                   <div>
                     <div className="flex items-center space-x-2.5 mb-3">
                       <Database className="w-5 h-5 text-emerald-400 group-hover:animate-pulse" />
@@ -1187,7 +1187,7 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
                 </div>
 
                 {/* Raw XML Tool */}
-                <div className="bg-slate-900/40 p-6 border border-rose-900/30 rounded flex flex-col justify-between text-left hover:border-rose-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(244,63,94,0.02)]">
+                <div className="w-[300px] md:w-[320px] shrink-0 snap-center bg-slate-900/40 p-6 border border-rose-900/30 rounded flex flex-col justify-between text-left hover:border-rose-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(244,63,94,0.02)]">
                   <div>
                     <div className="flex items-center space-x-2.5 mb-3">
                       <FileText className="w-5 h-5 text-rose-400 group-hover:animate-pulse" />
@@ -1232,7 +1232,7 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
                   </div>
                 </div>
                 {/* Raw LUA Tool */}
-                <div className="bg-slate-900/40 p-6 border border-yellow-900/30 rounded flex flex-col justify-between text-left hover:border-yellow-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(234,179,8,0.02)]">
+                <div className="w-[300px] md:w-[320px] shrink-0 snap-center bg-slate-900/40 p-6 border border-yellow-900/30 rounded flex flex-col justify-between text-left hover:border-yellow-500/40 hover:bg-slate-900/60 transition-all group shadow-[0_0_20px_rgba(234,179,8,0.02)]">
                   <div>
                     <div className="flex items-center space-x-2.5 mb-3">
                       <FileText className="w-5 h-5 text-yellow-400 group-hover:animate-pulse" />

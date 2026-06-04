@@ -75,7 +75,7 @@ export default function UnitEditor({ initialDoc, fileName, onClose, onError }: U
     if (!selectedUnit) return;
 
     // Update in XML Node
-    let childNode = Array.from(selectedUnit.node.children).find(c => c.tagName === field);
+    let childNode = Array.from(selectedUnit.node.children).find(c => (c as Element).tagName === field) as Element;
     if (!childNode) {
       if (value.trim() === '') return; // Don't create empty elements
       childNode = initialDoc.createElement(field);
