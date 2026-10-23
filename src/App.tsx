@@ -1214,8 +1214,8 @@ end
             <h1 className="text-lg font-bold tracking-widest uppercase italic">CORVUS <span className="font-extralight opacity-60">// EAW Modding Tool</span></h1>
             
             <div className="flex items-center gap-1 my-auto">
-              <div className="relative overflow-hidden px-2 py-0.5 border border-amber-500/40 bg-amber-500/10 rounded flex items-center group cursor-default">
-                <span className="text-[10px] font-mono font-bold tracking-widest text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)] z-10">
+              <div className="relative overflow-hidden px-2 py-0.5 border border-amber-400/80 bg-gradient-to-b from-slate-200/25 via-slate-300/15 to-slate-400/20 shadow-[0_0_10px_rgba(251,191,36,0.25)] rounded flex items-center group cursor-default">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-slate-200 drop-shadow-[0_0_8px_rgba(226,232,240,0.6)] z-10">
                   v{packageJson.version}
                 </span>
                 <div className="absolute inset-0 w-8 h-full bg-white/30 skew-x-[-15deg] blur-[2px] animate-shine z-0 pointer-events-none"></div>
