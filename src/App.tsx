@@ -13,6 +13,7 @@ import CampaignList from './components/CampaignList';
 import CampaignEditor from './components/CampaignEditor';
 import SettingsModal from './components/SettingsModal';
 import ManualModal from './components/ManualModal';
+import InstallerHudModal from './components/InstallerHudModal';
 import DatEditor from './components/DatEditor';
 import MtdEditor from './components/MtdEditor';
 import StoryEditor from './components/StoryEditor';
@@ -55,6 +56,12 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
   const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isManualOpen, setIsManualOpen] = useState(false);
+  const [isInstallerHudOpen, setIsInstallerHudOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('installer') === '1';
+    }
+    return false;
+  });
 
   const [datRecords, setDatRecords] = useState<DatRecord[] | null>(null);
   const [datFormat, setDatFormat] = useState<'indexed' | 'sequential_mult2' | 'sequential_mult1'>('indexed');
@@ -1260,6 +1267,16 @@ end
           </div>
 
           <button
+            onClick={() => setIsInstallerHudOpen(true)}
+            className="h-8 px-2.5 flex items-center gap-1.5 border border-amber-500/40 bg-amber-950/20 hover:border-amber-400/70 hover:bg-amber-500/15 text-amber-300 hover:text-amber-200 transition-all duration-200 rounded-sm text-[10px] font-mono font-bold uppercase tracking-wider cursor-pointer"
+            title={tr(lang, 'Tactical Installer HUD', 'Instalador Táctico HUD', 'Installateur Tactique HUD')}
+            id="installer_hud_toggle_btn"
+          >
+            <Download className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden md:inline">{tr(lang, 'Setup HUD', 'Instalador', 'Installateur')}</span>
+          </button>
+
+          <button
             onClick={() => setIsManualOpen(true)}
             className="h-8 px-2.5 flex items-center gap-1.5 border border-slate-700/60 hover:border-cyan-500/50 hover:bg-cyan-500/15 text-slate-300 hover:text-cyan-400 transition-all duration-200 rounded-sm text-[10px] font-mono font-bold uppercase tracking-wider cursor-pointer"
             title={t.userManual}
@@ -2298,6 +2315,11 @@ end
       <ManualModal
         isOpen={isManualOpen}
         onClose={() => setIsManualOpen(false)}
+      />
+
+      <InstallerHudModal
+        isOpen={isInstallerHudOpen}
+        onClose={() => setIsInstallerHudOpen(false)}
       />
 
       <UpdaterUI />
