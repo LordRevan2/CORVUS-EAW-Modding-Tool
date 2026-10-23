@@ -68,7 +68,7 @@ export default function PlanetEditor({ planet, onUpdate, onDelete }: PlanetEdito
       // Extract all single-node properties (no children, only text) that aren't Galactic_Position
       const extractedProps: { tagName: string, value: string }[] = [];
       Array.from(planet.el.children).forEach(child => {
-        if (child.children.length === 0 && child.tagName !== 'Galactic_Position') {
+        if (child.children.length === 0 && child.tagName.toLowerCase() !== 'galactic_position') {
           extractedProps.push({
             tagName: child.tagName,
             value: child.textContent?.trim() || ''
@@ -88,7 +88,8 @@ export default function PlanetEditor({ planet, onUpdate, onDelete }: PlanetEdito
   }
 
   const handlePositionChange = (axis: 'x'|'y'|'z', val: string) => {
-    const num = parseFloat(val) || 0;
+    const parsed = parseFloat(val);
+    const num = Number.isNaN(parsed) ? 0 : parsed;
     if (axis === 'x') setLocalX(num);
     if (axis === 'y') setLocalY(num);
     if (axis === 'z') setLocalZ(num);

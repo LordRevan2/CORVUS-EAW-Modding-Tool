@@ -257,27 +257,31 @@ export default function DatEditor({ initialRecords, fileName, onClose, format = 
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-slate-950">
-      {/* DAT Header Panel */}
-      <div className="h-16 border-b border-cyan-900 bg-slate-900/60 px-6 flex items-center justify-between shrink-0">
+      {/* DAT Header Panel — Unified Tactical HUD */}
+      <div className="h-14 border-b border-purple-900/40 bg-slate-900/80 backdrop-blur-md px-5 flex items-center justify-between shrink-0">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-cyan-900/40 border border-cyan-500/30 rounded flex items-center justify-center">
-            <FileText className="w-5 h-5 text-cyan-400" />
+          <div className="w-9 h-9 bg-purple-500/15 border border-purple-500/40 rounded-sm flex items-center justify-center shadow-[0_0_12px_rgba(168,85,247,0.2)]">
+            <FileText className="w-4 h-4 text-purple-400" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-xs uppercase tracking-widest text-slate-400 font-semibold font-mono">{t.datEditor.editorTitle}</span>
-              <span className="px-2 py-0.5 rounded-sm bg-cyan-950 border border-cyan-500/30 text-[9px] font-mono font-bold text-cyan-400 uppercase tracking-tighter">
-                v1.1 DAT Spec
+              <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+              <span className="text-xs uppercase tracking-widest text-purple-300 font-bold font-mono">{t.datEditor.editorTitle}</span>
+              <span className="px-1.5 py-0.5 rounded-sm bg-purple-950/90 border border-purple-500/40 text-[9px] font-mono font-bold text-purple-300 uppercase tracking-wider">
+                v1.2
+              </span>
+              <span className="px-1.5 py-0.5 rounded-sm bg-slate-950 border border-slate-800 text-[9px] font-mono text-slate-400 uppercase">
+                UTF-16LE // {total} KEYS
               </span>
             </div>
-            <h2 className="text-sm font-semibold font-mono text-cyan-200 truncate max-w-md">{fileName}</h2>
+            <h2 className="text-[11px] font-mono text-cyan-200/90 truncate max-w-md mt-0.5">{fileName}</h2>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2.5">
           <button
             onClick={() => setShowBulkImport(!showBulkImport)}
-            className="px-3 py-1.5 border border-purple-500/40 hover:bg-purple-900/20 text-purple-400 hover:text-purple-300 text-[10px] tracking-wider uppercase transition-all flex items-center space-x-1.5 font-mono"
+            className="px-3 py-1.5 border border-purple-500/40 hover:bg-purple-900/20 text-purple-300 hover:text-purple-200 text-[10px] font-bold tracking-wider uppercase transition-all flex items-center space-x-1.5 font-mono rounded-sm cursor-pointer"
             title={t.datEditor.bulkImportBtn}
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -286,7 +290,7 @@ export default function DatEditor({ initialRecords, fileName, onClose, format = 
 
           <button
             onClick={handleExportDat}
-            className="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-slate-950 text-[11px] font-bold tracking-widest uppercase transition-all flex items-center space-x-1.5"
+            className="px-4 py-1.5 bg-purple-500 hover:bg-purple-400 text-slate-950 text-[11px] font-mono font-bold tracking-widest uppercase transition-all flex items-center space-x-1.5 rounded-sm shadow-[0_0_15px_rgba(168,85,247,0.25)] cursor-pointer"
             title={t.datEditor.saveDatBtn}
           >
             <Download className="w-3.5 h-3.5" />
@@ -295,7 +299,7 @@ export default function DatEditor({ initialRecords, fileName, onClose, format = 
 
           <button
             onClick={onClose}
-            className="p-1.5 border border-slate-700/60 hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400 text-slate-400 transition-all rounded-sm ml-1 flex items-center justify-center"
+            className="p-1.5 border border-slate-700/60 hover:bg-red-500/10 hover:border-red-500/50 hover:text-red-400 text-slate-400 transition-all rounded-sm ml-1 flex items-center justify-center cursor-pointer"
             title={t.datEditor.closeBtn}
           >
             <X className="w-4 h-4" />
@@ -555,7 +559,7 @@ export default function DatEditor({ initialRecords, fileName, onClose, format = 
         </div>
 
         {/* Right Column: Split translation row editor */}
-        <div className="w-[450px] bg-slate-900/40 p-4 shrink-0 flex flex-col text-left">
+        <div className="w-full md:w-[450px] lg:w-[520px] xl:w-[580px] bg-slate-900/40 p-4 shrink-0 flex flex-col text-left border-l border-slate-900/40">
           {selectedRecord ? (
             <div className="h-full flex flex-col">
               <div className="p-3 bg-slate-900/80 border border-cyan-800/40 rounded mb-4">

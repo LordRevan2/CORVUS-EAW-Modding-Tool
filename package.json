@@ -1,7 +1,7 @@
 {
   "name": "corvus-eaw-modding-tool",
   "private": true,
-  "version": "2.0.12",
+  "version": "3.0.0",
   "type": "module",
   "main": "main.cjs",
   "repository": {
@@ -27,18 +27,30 @@
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "CORVUS",
+      "shortcutName": "CORVUS - EAW Modding Tool",
+      "menuCategory": "CORVUS Modding",
       "installerIcon": "public/icon.ico",
       "uninstallerIcon": "public/icon.ico",
+      "installerHeaderIcon": "public/icon.ico",
+      "installerHeader": "public/installerHeader.bmp",
+      "installerSidebar": "public/installerSidebar.bmp",
+      "uninstallerSidebar": "public/installerSidebar.bmp",
+      "include": "build/installer.nsh",
+      "license": "build/LICENSE.txt",
+      "language": "1034",
+      "runAfterFinish": true,
       "uninstallDisplayName": "CORVUS // EAW Modding Tool",
+      "artifactName": "CORVUS-EAW-Modding-Tool-Setup-${version}.${ext}",
       "allowElevation": true
     },
     "mac": {
       "icon": "public/icon.png"
     },
+    "npmRebuild": false,
     "files": [
       "dist/**/*",
       "main.cjs"
@@ -50,18 +62,21 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
+    "generate:assets": "node generate_icon.js",
     "electron:start": "electron .",
-    "electron:build:win": "npm run build && electron-builder --win",
-    "electron:build:mac": "npm run build && electron-builder --mac",
-    "electron:build:linux": "npm run build && electron-builder --linux",
-    "electron:build:all": "npm run build && electron-builder --win --mac --linux",
-    "electron:publish": "npm run build && electron-builder --win --publish always"
+    "electron:preview": "npm run generate:assets && npm run build && electron .",
+    "electron:build:win": "npm run generate:assets && npm run build && electron-builder --win",
+    "electron:build:mac": "npm run generate:assets && npm run build && electron-builder --mac",
+    "electron:build:linux": "npm run generate:assets && npm run build && electron-builder --linux",
+    "electron:build:all": "npm run generate:assets && npm run build && electron-builder --win --mac --linux",
+    "electron:publish": "npm run generate:assets && npm run build && electron-builder --win --publish always"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
     "@types/prismjs": "^1.26.6",
     "@vitejs/plugin-react": "^5.0.4",
+    "7zip-bin": "^5.2.0",
     "dotenv": "^17.2.3",
     "electron-updater": "^6.8.3",
     "express": "^4.21.2",
@@ -69,13 +84,14 @@
     "luaparse": "^0.3.1",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
+    "node-7z": "^3.0.0",
     "node-unrar-js": "^2.0.2",
     "prismjs": "^1.30.0",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-simple-code-editor": "^0.14.1",
     "tga-js": "^1.1.1",
-    "vite": "^6.2.3",
+    "unrar-js": "^0.2.3",
     "xml-formatter": "^3.7.0"
   },
   "devDependencies": {

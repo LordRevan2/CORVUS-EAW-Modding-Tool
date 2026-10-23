@@ -6,6 +6,7 @@ export interface MtdIcon {
   width: number; // Width in pixels
   height: number; // Height in pixels
   alpha: boolean; // Has alpha / active flag, usually true
+  imageData?: string;
 }
 
 export function parseMtd(buffer: ArrayBuffer): MtdIcon[] {
@@ -97,14 +98,21 @@ export function parseMtd(buffer: ArrayBuffer): MtdIcon[] {
   return icons;
 }
 
-export function serializeMtd(icons: MtdIcon[], textureName: string = "MT_CommandBar.tga"): ArrayBuffer {
+export function serializeMtd(icons: MtdIcon[], textureName: string = "MT_CommandBar.tga", format: 'EAW_81' | 'ALAMO' = 'EAW_81'): ArrayBuffer {
   // Ensure uniqueness
   const uniqueIcons = new Map<string, MtdIcon>();
   icons.forEach(i => {
     let name = (i.name || "").trim().toUpperCase();
+
+    // Ensure we don't end up with completely empty names
     if (!name) name = "I_BUTTON_UNKNOWN_" + crypto.randomUUID().substring(0, 8);
-    // Add extension if it lacks one (mostly they have .TGA)
-    if (!name.includes(".")) name += ".TGA";
+    name = name.replace(/\.[^/.]+$/, "") + ".TGA";
+    if (!name.endsWith(".TGA")) name += ".TGA";
+    
+    if (format === 'EAW_81' && name.length > 63) {
+       name = name.substring(0, 63 - 4) + ".TGA";
+    }
+    
     uniqueIcons.set(name, { ...i, name });
   });
   
@@ -116,56 +124,85 @@ export function serializeMtd(icons: MtdIcon[], textureName: string = "MT_Command
   });
 
   const encoder = new TextEncoder();
-  const texBytes = encoder.encode(textureName);
   
-  // Header: 12 bytes
-  // Texture Name: 4 bytes (len) + texBytes.length + 1 (null byte)
-  let totalSize = 12 + 4 + texBytes.length + 1;
+  if (format === 'ALAMO') {
+     const texBytes = encoder.encode(textureName);
+     let totalSize = 12 + 4 + texBytes.length + 1;
 
-  const iconNameBytesMap: Uint8Array[] = [];
-  
-  for (let i = 0; i < sortedIcons.length; i++) {
-    const iconBytes = encoder.encode(sortedIcons[i].name);
-    iconNameBytesMap.push(iconBytes);
-    // name len (4) + nameBytes + 1 (null byte) + 4 floats (16)
-    totalSize += 4 + iconBytes.length + 1 + 16;
+     const iconNameBytesMap: Uint8Array[] = [];
+     for (let i = 0; i < sortedIcons.length; i++) {
+        const iconBytes = encoder.encode(sortedIcons[i].name);
+        iconNameBytesMap.push(iconBytes);
+        totalSize += 4 + iconBytes.length + 1 + 16;
+     }
+
+     const buffer = new ArrayBuffer(totalSize);
+     const dt = new DataView(buffer);
+     let offset = 0;
+
+     new Uint8Array(buffer, offset, 4).set(encoder.encode("MTD ")); offset += 4;
+     dt.setUint32(offset, 2, true); offset += 4;
+     dt.setUint32(offset, sortedIcons.length, true); offset += 4;
+
+     dt.setUint32(offset, texBytes.length + 1, true); offset += 4;
+     new Uint8Array(buffer, offset, texBytes.length).set(texBytes); offset += texBytes.length;
+     dt.setUint8(offset, 0); offset += 1;
+
+     for (let i = 0; i < sortedIcons.length; i++) {
+        const icon = sortedIcons[i];
+        const nameBytes = iconNameBytesMap[i];
+        
+        dt.setUint32(offset, nameBytes.length + 1, true); offset += 4;
+        new Uint8Array(buffer, offset, nameBytes.length).set(nameBytes); offset += nameBytes.length;
+        dt.setUint8(offset, 0); offset += 1;
+
+        const xLeft = Math.max(0, icon.x);
+        const xRight = Math.max(0, icon.x + icon.width);
+        const yTop = Math.max(0, icon.y);
+        const yBottom = Math.max(0, icon.y + icon.height);
+
+        dt.setFloat32(offset, xLeft, true); offset += 4;
+        dt.setFloat32(offset, yTop, true); offset += 4;
+        dt.setFloat32(offset, xRight, true); offset += 4;
+        dt.setFloat32(offset, yBottom, true); offset += 4;
+     }
+     return buffer;
   }
   
+  // 81-BYTE EAW FORMAT
+  // Count: 4 bytes
+  // Each Icon: 81 bytes (64 byte name, 4 uint32s for X,Y,W,H, 1 byte Alpha)
+  const totalSize = 4 + (sortedIcons.length * 81);
   const buffer = new ArrayBuffer(totalSize);
   const dt = new DataView(buffer);
   let offset = 0;
   
-  // Magic
-  new Uint8Array(buffer, offset, 4).set(encoder.encode("MTD ")); offset += 4;
-  // Version
-  dt.setUint32(offset, 2, true); offset += 4;
   // Count
   dt.setUint32(offset, sortedIcons.length, true); offset += 4;
   
-  // Texture Name
-  dt.setUint32(offset, texBytes.length + 1, true); offset += 4;
-  new Uint8Array(buffer, offset, texBytes.length).set(texBytes); offset += texBytes.length;
-  dt.setUint8(offset, 0); offset += 1; // null byte
-  
   for (let i = 0; i < sortedIcons.length; i++) {
     const icon = sortedIcons[i];
-    const nameBytes = iconNameBytesMap[i];
     
-    // Name Length and string
-    dt.setUint32(offset, nameBytes.length + 1, true); offset += 4;
-    new Uint8Array(buffer, offset, nameBytes.length).set(nameBytes); offset += nameBytes.length;
-    dt.setUint8(offset, 0); offset += 1; // null byte
+    // 1. Name 64 bytes (null-terminated and padded)
+    const nameBytes = encoder.encode(icon.name);
+    const nameBuffer = new Uint8Array(buffer, offset, 64);
+    // Copy bytes, ensuring we don't exceed 63 bytes to leave room for null terminator
+    const copyLen = Math.min(nameBytes.length, 63);
+    nameBuffer.set(nameBytes.slice(0, copyLen));
+    offset += 64;
     
-    // X Left, Y Top, X Right, Y Bottom
-    const xLeft = Math.min(icon.x, icon.x + icon.width);
-    const xRight = Math.max(icon.x, icon.x + icon.width);
-    const yTop = Math.min(icon.y, icon.y + icon.height);
-    const yBottom = Math.max(icon.y, icon.y + icon.height);
-
-    dt.setFloat32(offset, xLeft, true); offset += 4;
-    dt.setFloat32(offset, yTop, true); offset += 4;
-    dt.setFloat32(offset, xRight, true); offset += 4;
-    dt.setFloat32(offset, yBottom, true); offset += 4;
+    const x = Math.max(0, Math.round(icon.x));
+    const y = Math.max(0, Math.round(icon.y));
+    const w = Math.max(0, Math.round(icon.width));
+    const h = Math.max(0, Math.round(icon.height));
+    
+    dt.setUint32(offset, x, true); offset += 4;
+    dt.setUint32(offset, y, true); offset += 4;
+    dt.setUint32(offset, w, true); offset += 4;
+    dt.setUint32(offset, h, true); offset += 4;
+    
+    const hasAlpha = icon.alpha !== false ? 1 : 0;
+    dt.setUint8(offset, hasAlpha); offset += 1;
   }
   
   return buffer;

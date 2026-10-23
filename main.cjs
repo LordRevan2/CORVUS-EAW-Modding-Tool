@@ -22,12 +22,15 @@ if (!gotTheLock) {
   });
 
   function createWindow() {
+    const iconPath = path.join(__dirname, app.isPackaged ? 'dist' : 'public', 'icon.ico');
+
     win = new BrowserWindow({
       width: 1280,
       height: 800,
       minWidth: 1024,
       minHeight: 768,
       title: "CORVUS // EAW Modding Tool",
+      icon: iconPath,
       backgroundColor: '#0f172a',
       autoHideMenuBar: true,
       show: false, // No mostrar hasta que esté listo (prevenir parpadeo blanco)
@@ -40,7 +43,9 @@ if (!gotTheLock) {
     if (app.isPackaged) {
       win.loadFile(path.join(__dirname, 'dist', 'index.html'));
     } else {
-      win.loadURL('http://localhost:3000');
+      win.loadURL('http://localhost:3000').catch(() => {
+        win.loadFile(path.join(__dirname, 'dist', 'index.html'));
+      });
     }
 
     win.once('ready-to-show', () => {
@@ -52,7 +57,9 @@ if (!gotTheLock) {
     createWindow();
 
     if (app.isPackaged) {
-      autoUpdater.checkForUpdatesAndNotify();
+      autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+        console.warn('AutoUpdater omitido o sin conexión:', err.message);
+      });
     }
   });
 }
@@ -80,11 +87,15 @@ autoUpdater.on('update-downloaded', (info) => {
 
 // --- IPC IPCMain -> Renderer ---
 ipcMain.on('check-for-updates', () => {
-  autoUpdater.checkForUpdates();
+  autoUpdater.checkForUpdates().catch((err) => {
+    if (win) win.webContents.send('updater-message', { status: 'error', text: 'Error al buscar actualizaciones: ' + err.message });
+  });
 });
 
 ipcMain.on('download-update', () => {
-  autoUpdater.downloadUpdate();
+  autoUpdater.downloadUpdate().catch((err) => {
+    if (win) win.webContents.send('updater-message', { status: 'error', text: 'Error al descargar actualización: ' + err.message });
+  });
 });
 
 ipcMain.on('quit-and-install', () => {

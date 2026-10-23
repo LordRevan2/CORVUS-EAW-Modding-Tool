@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { parseMtd, serializeMtd } from './src/lib/mtd';
+import { parseMtd, serializeMtd } from '../../src/lib/mtd';
 
 const orig = fs.readFileSync('resources/Mt_commandbar.mtd');
 const icons = parseMtd(orig.buffer.slice(orig.byteOffset, orig.byteOffset + orig.byteLength));
