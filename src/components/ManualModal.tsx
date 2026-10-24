@@ -71,13 +71,13 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
     {
       id: 'translations',
       label: tr(lang, '7. Translations (.DAT)', '7. Traducciones (.DAT)', '7. Traductions (.DAT)'),
-      badge: 'v1.2',
+      badge: 'v1.3',
       icon: FileText,
     },
     {
       id: 'mtd',
       label: tr(lang, '8. Mega Textures (.MTD)', '8. Mega Texturas (.MTD)', '8. MegaTextures (.MTD)'),
-      badge: 'v1.1',
+      badge: 'v1.3',
       icon: ImageIcon,
     },
     {
@@ -95,7 +95,7 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
     {
       id: 'rawlua',
       label: tr(lang, '11. Raw LUA 5.0 IDE', '11. Editor Script LUA', '11. Éditeur Script LUA'),
-      badge: 'v2.1',
+      badge: 'v2.2',
       icon: Terminal,
     },
     {
@@ -223,8 +223,8 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
                       {tr(lang, 'Localization & UI (3 Tools)', 'Localización e Interfaz (3 Herramientas)', 'Localisation & UI (3 Outils)')}
                     </span>
                     <ul className="text-[11px] space-y-1 text-slate-400 font-mono">
-                      <li>• {tr(lang, 'MasterTextFile .DAT (v1.2)', 'Traducciones .DAT (v1.2)', 'Traductions .DAT (v1.2)')}</li>
-                      <li>• {tr(lang, 'Mega-Texture .MTD (v1.1)', 'Mega-Texturas .MTD (v1.1)', 'MegaTextures .MTD (v1.1)')}</li>
+                      <li>• {tr(lang, 'MasterTextFile .DAT (v1.3)', 'Traducciones .DAT (v1.3)', 'Traductions .DAT (v1.3)')}</li>
+                      <li>• {tr(lang, 'Mega-Texture .MTD (v1.2)', 'Mega-Texturas .MTD (v1.2)', 'MegaTextures .MTD (v1.2)')}</li>
                       <li>• {tr(lang, 'Dialog & Briefings .TXT (v1.1)', 'Diálogos y Guiones .TXT (v1.1)', 'Dialogues .TXT (v1.1)')}</li>
                     </ul>
                   </div>
@@ -640,44 +640,72 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
                     {tr(lang, '7. String Localization Editor (.DAT)', '7. Editor de Traducciones y Textos (.DAT)', '7. Éditeur de Traductions et Textes (.DAT)')}
                   </h3>
                   <span className="text-[10px] font-mono px-2 py-0.5 bg-purple-950/60 text-purple-300 border border-purple-700/50 rounded-sm">
-                    v1.2 // MasterTextFile_*.dat
+                    v1.3 // MasterTextFile_*.dat
                   </span>
                 </div>
 
                 <p className="text-xs leading-relaxed text-slate-300">
                   {tr(
                     lang,
-                    'Star Wars: Empire at War stores all in-game text (unit names, planet names, tooltips, encyclopedia descriptions, and mission subtitles) inside binary .DAT files located in Data/Text/. The CORVUS .DAT Editor decodes and compiles these binary files natively.',
-                    'Star Wars: Empire at War almacena todos los textos del juego (nombres de unidades, planetas, descripciones de la enciclopedia y subtítulos de misión) en archivos binarios .DAT dentro de Data/Text/. El Editor .DAT de CORVUS decodifica y compila estos binarios de forma nativa.',
-                    "Star Wars: Empire at War stocke tous les textes du jeu (noms d'unités, planètes, infobulles, descriptions d'encyclopédie et sous-titres) dans des fichiers binaires .DAT situés dans Data/Text/. L'Éditeur .DAT de CORVUS décode et compile ces fichiers nativement."
+                    'Star Wars: Empire at War stores all in-game text (unit names, planet names, tooltips, encyclopedia descriptions, and mission subtitles) inside binary .DAT files located in Data/Text/. Version 1.3 adds a Bilingual .DAT Comparator, a 3-in-1 Entity Key Pack Generator, Batch Find & Replace, CSV/TSV/JSON export/import, Undo/Redo history, and an in-game EAW HUD Tooltip Simulator.',
+                    'Star Wars: Empire at War almacena todos los textos del juego (nombres de unidades, planetas, descripciones de enciclopedia y subtítulos) en archivos binarios .DAT dentro de Data/Text/. La versión 1.3 incorpora Comparador Bilingüe .DAT, Generador de Packs de Claves 3-en-1, Buscar y Reemplazar en lote, Importación/Exportación CSV/TSV/JSON, Historial Deshacer/Rehacer y Simulador de Tooltip HUD en tiempo real.',
+                    "Star Wars: Empire at War stocke tous les textes du jeu dans des fichiers binaires .DAT situés dans Data/Text/. La version 1.3 ajoute un comparateur bilingue .DAT, un générateur de packs de clés 3-en-1, le rechercher/remplacer en lot, l'import/export CSV/TSV/JSON et un simulateur HUD."
                   )}
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                   <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm space-y-1.5">
                     <span className="font-mono font-bold text-purple-400 uppercase block">
-                      {tr(lang, 'Binary Index & UTF-16LE Compiler', 'Compilador Binario y Codificación UTF-16LE', 'Compilateur Binaire & Encodage UTF-16LE')}
+                      {tr(lang, '1. Binary CRC32 Index & UTF-16LE Compiler', '1. Compilador Binario CRC32 y UTF-16LE', '1. Compilateur Binaire CRC32 & UTF-16LE')}
                     </span>
                     <p className="text-slate-400 leading-relaxed">
                       {tr(
                         lang,
-                        'Automatically parses the 32-bit CRC/length header table, ASCII key directory, and UTF-16LE value strings. When exporting, CORVUS automatically sorts keys in strict ASCII alphabetical order as required by the Alamo Engine binary lookup.',
-                        'Analiza automáticamente la tabla binaria de cabeceras, el directorio de claves ASCII y las cadenas de texto en UTF-16LE. Al exportar, CORVUS ordena las claves en estricto orden alfabético ASCII tal y como exige el motor Alamo.',
-                        'Analyse automatiquement la table d\'en-tête binaire, le répertoire de clés ASCII et les chaînes UTF-16LE. Lors de l\'exportation, CORVUS trie automatiquement les clés par ordre alphabétique ASCII strict requis par le moteur Alamo.'
+                        'Decodes and compiles Indexed CRC32 and Sequential .DAT formats natively, displaying the live 32-bit Petroglyph CRC32 checksum for every key and sorting the binary lookup table automatically on export.',
+                        'Decodifica y compila de forma nativa los formatos Indexed CRC32 y Sequential .DAT, mostrando el hash CRC32 de 32 bits exacto de cada clave y ordenando la tabla binaria automáticamente al exportar.',
+                        'Décode et compile nativement les formats .DAT Indexed CRC32 et Sequential avec calcul du hash CRC32 en temps réel.'
                       )}
                     </p>
                   </div>
 
                   <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm space-y-1.5">
                     <span className="font-mono font-bold text-purple-400 uppercase block">
-                      {tr(lang, 'Bulk Import & Duplicate Key Cleaner', 'Importación Masiva y Limpiador de Duplicados', 'Importation en Masse & Nettoyage des Doublons')}
+                      {tr(lang, '2. Bilingual .DAT Comparator & Missing Key Sync', '2. Comparador Bilingüe .DAT y Sincronización', '2. Comparateur Bilingue .DAT & Synchronisation')}
                     </span>
                     <p className="text-slate-400 leading-relaxed">
                       {tr(
                         lang,
-                        'Search across tens of thousands of strings instantaneously. Add single keys, batch-import multiple KEY=Value lines at once, filter duplicate keys, and resolve collisions with one click.',
-                        'Busca entre decenas de miles de cadenas al instante. Añade claves individuales, importa lotes de líneas CLAVE=Valor de una sola vez, filtra claves duplicadas y limpia colisiones con un clic.',
-                        'Recherchez instantanément parmi des dizaines de milliers de chaînes. Ajoutez des clés, importez des lots de lignes CLÉ=Valeur en une fois et supprimez les doublons en un clic.'
+                        'Load a reference file (e.g. MasterTextFile_ENGLISH.dat) to detect missing keys in your localized .DAT, import missing entries in 1 click, and view the reference text right above your translation box.',
+                        'Carga un archivo de referencia (ej. MasterTextFile_ENGLISH.dat) para detectar qué claves faltan en tu traducción, importarlas con 1 clic y visualizar el texto original justo encima del cuadro de edición.',
+                        'Chargez un fichier de référence (ex. MasterTextFile_ENGLISH.dat) pour détecter et importer les clés manquantes en un clic.'
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm space-y-1.5">
+                    <span className="font-mono font-bold text-purple-400 uppercase block">
+                      {tr(lang, '3. 3-in-1 Entity Key Pack & Batch Replace', '3. Generador de Pack de Entidad y Reemplazo Masivo', '3. Générateur de Pack d\'Entité & Remplacement')}
+                    </span>
+                    <p className="text-slate-400 leading-relaxed">
+                      {tr(
+                        lang,
+                        'Generate Name, Tooltip, and Encyclopedia keys for any new Unit, Planet, Hero, or Building in a single step, or run batch Find & Replace across thousands of keys and strings.',
+                        'Genera de una vez las 3 claves estándar (Nombre, Tooltip y Enciclopedia) para cualquier nueva Unidad, Planeta, Héroe o Edificio, o ejecuta Buscar y Reemplazar en lote sobre miles de textos.',
+                        'Générez les 3 clés standard (Nom, Tooltip et Encyclopédie) en une seule étape ou effectuez un remplacement par lot.'
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm space-y-1.5">
+                    <span className="font-mono font-bold text-purple-400 uppercase block">
+                      {tr(lang, '4. CSV/TSV/JSON Export & EAW HUD Simulator', '4. Exportación CSV/TSV/JSON y Simulador HUD', '4. Export CSV/TSV/JSON & Simulateur HUD')}
+                    </span>
+                    <p className="text-slate-400 leading-relaxed">
+                      {tr(
+                        lang,
+                        'Smart-merge or export full localization tables in .CSV, .TSV, or .JSON, auto-deduplicate collisions, copy <Text_ID> XML snippets in one click, and preview strings inside the EAW HUD Tooltip Simulator.',
+                        'Importa con fusión inteligente o exporta tablas completas en .CSV, .TSV o .JSON, limpia duplicados en un clic, copia etiquetas <Text_ID> para XML y previsualiza el resultado en el Simulador HUD de EAW.',
+                        'Importez ou exportez en .CSV, .TSV ou .JSON, nettoyez les doublons et prévisualisez le rendu dans le simulateur HUD.'
                       )}
                     </p>
                   </div>
@@ -693,44 +721,72 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
                     {tr(lang, '8. Mega-Texture Atlas Editor (.MTD)', '8. Editor de Atlas Mega-Texturas (.MTD)', '8. Éditeur d\'Atlas MegaTextures (.MTD)')}
                   </h3>
                   <span className="text-[10px] font-mono px-2 py-0.5 bg-amber-950/60 text-amber-300 border border-amber-700/50 rounded-sm">
-                    v1.1 // MTDF Binary & TGA/DDS/PNG
+                    v1.3 // 81-Byte & Alamo Binary + TGA/PNG
                   </span>
                 </div>
 
                 <p className="text-xs leading-relaxed text-slate-300">
                   {tr(
                     lang,
-                    'Unit build icons, radar blips, and HUD buttons in Empire at War are packed into large texture sheets (e.g., MT_CommandBar.tga/.dds) accompanied by a binary MT_CommandBar.mtd index file. The Mega-Texture Editor eliminates manual UV math.',
-                    'Los iconos de construcción de unidades, radares y botones del HUD en Empire at War se agrupan en grandes hojas de textura (ej. MT_CommandBar.tga/.dds) acompañadas de un archivo índice binario MT_CommandBar.mtd. El Editor de Mega-Texturas elimina el cálculo manual de coordenadas UV.',
-                    "Les icônes d'unités et boutons d'interface dans Empire at War sont regroupés dans de grands atlas de textures (ex: MT_CommandBar.tga/.dds) accompagnés d'un fichier d'index binaire .mtd. L'Éditeur MegaTexture élimine tout calcul UV manuel."
+                    'Unit build icons, radar blips, and HUD buttons in Empire at War are packed into large texture sheets (e.g., MT_CommandBar.tga) accompanied by a binary MT_CommandBar.mtd index file. Version 1.3 introduces a hardware-accelerated Split Atlas Canvas, batch icon packing, in-place image replacement, individual icon extraction, and real-time collision/bounds diagnostics.',
+                    'Los iconos de construcción de unidades, radares y botones del HUD en Empire at War se agrupan en grandes hojas de textura (ej. MT_CommandBar.tga) acompañadas de un archivo índice binario MT_CommandBar.mtd. La versión 1.3 incorpora un Lienzo Interactivo del Atlas acelerado por hardware en vista dividida, importación masiva por lotes, reemplazo de imagen in-situ, extracción individual en .PNG/.TGA y diagnóstico de colisiones en tiempo real.',
+                    "Les icônes d'unités et boutons d'interface dans Empire at War sont regroupés dans de grands atlas de textures (ex: MT_CommandBar.tga) accompagnés d'un fichier d'index binaire .mtd. La version 1.3 ajoute un canevas d'atlas interactif accéléré en vue scindée, l'importation en lot, l'extraction d'icône individuelle et un diagnostic de collision en temps réel."
                   )}
                 </p>
 
-                <div className="space-y-2.5 text-xs">
-                  <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm">
-                    <span className="font-mono font-bold text-amber-400 uppercase block mb-1">
-                      {tr(lang, '1. Dual File Pairing (.MTD + Texture Sheet)', '1. Emparejamiento de Archivo .MTD + Imagen de Textura', '1. Couplage Fichier .MTD + Feuille de Texture')}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm space-y-1.5">
+                    <span className="font-mono font-bold text-amber-400 uppercase block">
+                      {tr(lang, '1. Interactive Split Atlas Canvas & Gallery', '1. Lienzo Interactivo del Atlas y Galería Visual', '1. Canevas Interactif & Galerie Visuelle')}
                     </span>
                     <p className="text-slate-400 leading-relaxed">
                       {tr(
                         lang,
-                        'Load your .MTD file first, then load the corresponding .TGA, .DDS, or .PNG atlas image. CORVUS renders the full texture canvas with interactive bounding boxes for every registered icon.',
-                        'Carga primero tu archivo .MTD y a continuación carga la imagen del atlas (.TGA, .DDS o .PNG). CORVUS renderiza el lienzo completo con los recuadros delimitadores de cada icono registrado.',
-                        'Chargez votre fichier .MTD puis l\'image d\'atlas correspondante (.TGA, .DDS ou .PNG). CORVUS affiche la texture complète avec les cadres de sélection de chaque icône.'
+                        'Switch between Split View (Table + Interactive Atlas Canvas), Detailed Table, and Visual Gallery Grid. Zoom (15%–400%), pan, click any bounding box on the texture to select it, or unlock coordinates to drag and resize bounding boxes directly on the canvas.',
+                        'Alterna entre Vista Dividida (Tabla + Lienzo Interactivo del Atlas), Tabla Detallada y Galería Visual. Haz zoom (15%–400%), desplázate, haz clic sobre cualquier recuadro de la textura para seleccionarlo o desbloquea las coordenadas para arrastrar y redimensionar las cajas directamente sobre el lienzo.',
+                        "Basculez entre la Vue Scindée (Tableau + Canevas Interactif), le Tableau Détaillé et la Galerie Visuelle. Zoomez, cliquez sur n'importe quel cadre sur la texture ou déplacez/redimensionnez les cadres directement à la souris."
                       )}
                     </p>
                   </div>
 
-                  <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm">
-                    <span className="font-mono font-bold text-amber-400 uppercase block mb-1">
-                      {tr(lang, '2. Visual Marquee Box & Automatic UV Calculation', '2. Recuadro Visual y Cálculo Automático de Coordenadas UV', '2. Sélection Visuelle & Calcul Automatique des Coordonnées UV')}
+                  <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm space-y-1.5">
+                    <span className="font-mono font-bold text-amber-400 uppercase block">
+                      {tr(lang, '2. Single & Batch Icon Auto-Packer (2px Pad)', '2. Empaquetador Individual y por Lotes (Margen 2px)', '2. Empaqueteur Individuel & en Lot (Marge 2px)')}
                     </span>
                     <p className="text-slate-400 leading-relaxed">
                       {tr(
                         lang,
-                        'Drag or resize the selection box directly on the texture canvas, or type the exact pixel X, Y, Width, and Height values. CORVUS automatically computes the normalized floating-point UV coordinates and live-crops a preview of the icon.',
-                        'Arrastra o redimensiona el recuadro directamente sobre el atlas, o introduce los valores exactos en píxeles (X, Y, Ancho y Alto). CORVUS calcula automáticamente las coordenadas UV en coma flotante y muestra una vista previa recortada del icono en tiempo real.',
-                        'Déplacez ou redimensionnez le cadre directement sur l\'atlas, ou saisissez les pixels X, Y, Largeur et Hauteur. CORVUS calcule automatiquement les coordonnées UV flottantes et affiche un aperçu découpé de l\'icône.'
+                        'Import one or multiple .TGA/.PNG/.JPG icons at once. CORVUS automatically formats names as I_BUTTON_*.TGA, detects alpha transparency, finds free non-overlapping slots with a 2px safety border, and expands the atlas to the next power of two if full.',
+                        'Importa uno o múltiples iconos .TGA/.PNG/.JPG simultáneamente. CORVUS formatea los nombres como I_BUTTON_*.TGA, detecta transparencia alfa, busca huecos libres con margen de seguridad de 2px y amplía el atlas a la siguiente potencia de 2 si es necesario.',
+                        'Importez une ou plusieurs icônes .TGA/.PNG/.JPG simultanément. CORVUS formate les noms en I_BUTTON_*.TGA, détecte la transparence alpha et place chaque icône avec une marge de sécurité de 2px.'
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm space-y-1.5">
+                    <span className="font-mono font-bold text-amber-400 uppercase block">
+                      {tr(lang, '3. Replace Graphic & Extract Single Icon (.PNG/.TGA)', '3. Reemplazar Imagen y Extraer Icono Suelto (.PNG/.TGA)', '3. Remplacer Image & Extraire Icône (.PNG/.TGA)')}
+                    </span>
+                    <p className="text-slate-400 leading-relaxed">
+                      {tr(
+                        lang,
+                        'Update an existing icon graphic in-place on the atlas with "Replace Image", duplicate entries, create manual coordinate entries, or extract any selected icon cropped from the sheet as a standalone .PNG or 32-bit .TGA.',
+                        'Actualiza el gráfico de un icono existente sobre el atlas con "Cambiar Imagen", duplica registros, crea entradas manuales de coordenadas o extrae cualquier icono recortado como archivo .PNG o .TGA de 32 bits independiente.',
+                        "Remplacez le graphique d'une icône existante sur l'atlas, créez des entrées manuelles ou extrayez n'importe quelle icône découpée en fichier .PNG ou .TGA 32 bits."
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm space-y-1.5">
+                    <span className="font-mono font-bold text-amber-400 uppercase block">
+                      {tr(lang, '4. Collision & Out-of-Bounds Auditor + Auto-Fix', '4. Auditor de Solapamientos y Fuera de Rango + Auto-Fix', '4. Auditeur de Collisions & Hors Limites + Auto-Fix')}
+                    </span>
+                    <p className="text-slate-400 leading-relaxed">
+                      {tr(
+                        lang,
+                        'Automatically highlights overlapping icons in orange and out-of-bounds icons in red. Click "Auto-Fix Slot" to relocate a colliding icon into a clean 2px-padded slot, and export in 81-Byte Standard or Alamo Binary format.',
+                        'Resalta automáticamente los iconos solapados en naranja y los que exceden el tamaño de la textura en rojo. Pulsa "Auto-Reparar" para reubicar un icono en conflicto en un hueco libre con margen de 2px, y exporta en formato 81-Byte Estándar o Alamo Binario.',
+                        "Met en évidence les collisions en orange et les dépassements en rouge. Cliquez sur « Auto-Réparer » pour relocaliser proprement une icône en conflit et exportez au format 81-Byte Standard ou Binaire Alamo."
                       )}
                     </p>
                   </div>
@@ -852,7 +908,7 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
                     {tr(lang, '11. Raw LUA 5.0 Script IDE', '11. Entorno de Desarrollo LUA 5.0 (Raw LUA IDE)', '11. Environnement de Développement LUA 5.0')}
                   </h3>
                   <span className="text-[10px] font-mono px-2 py-0.5 bg-yellow-950/60 text-yellow-300 border border-yellow-700/50 rounded-sm">
-                    v2.1 // Alamo Lua 5.0
+                    v2.2 // Alamo Lua 5.0
                   </span>
                 </div>
 

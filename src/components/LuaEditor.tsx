@@ -1222,91 +1222,112 @@ export const LuaEditor: React.FC<LuaEditorProps> = ({
 
   return (
     <div className="flex flex-col h-full w-full bg-slate-950 text-slate-200 select-none overflow-hidden">
-      {/* Unified CORVUS Tactical HUD Header (v2.1) */}
-      <div className="flex flex-wrap items-center justify-between min-h-[3.5rem] px-4 py-2 bg-slate-900/90 border-b border-yellow-900/50 gap-3 shrink-0 backdrop-blur-md">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-8 h-8 bg-yellow-500/15 border border-yellow-500/40 rounded-sm flex items-center justify-center text-yellow-400 shrink-0 shadow-[0_0_12px_rgba(234,179,8,0.2)]">
+      {/* Top Primary Header (v2.2) — Unified with XML Editor Layout */}
+      <div className="flex-none min-h-[3.5rem] px-4 py-2 border-b border-yellow-900/50 flex flex-wrap justify-between items-center gap-3 bg-slate-900/90 backdrop-blur-md shrink-0">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 rounded-sm bg-yellow-500/15 border border-yellow-500/40 flex items-center justify-center text-yellow-400 shrink-0 shadow-[0_0_12px_rgba(234,179,8,0.2)]">
             <FileCode className="w-4 h-4" />
           </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-mono font-bold uppercase tracking-widest text-yellow-400 flex items-center gap-1.5">
+          <div>
+            {/* Row 1: Title + Version + Script Type + Compact Stats */}
+            <div className="flex items-center space-x-2">
+              <h2 className="text-yellow-400 font-bold uppercase tracking-widest text-xs font-mono flex items-center space-x-2">
                 <span className={`w-2 h-2 rounded-full ${analysis.syntaxError ? 'bg-red-500' : 'bg-emerald-400'} animate-pulse`} />
                 <span>{tr(lang, 'RAW LUA 5.0 IDE', 'IDE LUA 5.0 CRUDO', 'IDE LUA 5.0 BRUT')}</span>
+              </h2>
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-yellow-950/90 text-yellow-300 border border-yellow-700/50">
+                v2.2
               </span>
-              <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider bg-yellow-950/90 text-yellow-300 border border-yellow-700/50 rounded">
-                v2.1
-              </span>
-              <span className="px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider bg-slate-950 text-slate-300 border border-slate-800 rounded">
+              <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">
                 {analysis.scriptType}
               </span>
+              <span className="hidden xl:inline-flex items-center gap-1.5 text-[9px] font-mono text-slate-500 pl-1">
+                <span>{analysis.lineCount}L</span>
+                <span>·</span>
+                <span>{analysis.symbols.filter(s => s.kind === 'function').length} fn</span>
+                <span>·</span>
+                <span>{analysis.symbols.filter(s => s.kind === 'state').length} st</span>
+                <span>·</span>
+                <span>L:{activeLine}</span>
+              </span>
+            </div>
+
+            {/* Row 2: Filename Input + Workspace Switcher + Syntax Status Badge */}
+            <div className="flex items-center space-x-2 mt-1">
               <input
                 type="text"
                 value={editableFileName}
                 onChange={e => setEditableFileName(e.target.value)}
-                className="bg-slate-950/90 border border-slate-800 focus:border-yellow-500/70 rounded px-2 py-0.5 text-[11px] font-bold text-slate-200 focus:outline-none w-44 font-mono"
+                className="text-[11px] text-slate-200 font-mono bg-slate-950/90 border border-slate-800 focus:border-yellow-500/60 rounded px-2 py-0.5 outline-none w-48"
                 title={tr(lang, 'Lua script file name', 'Nombre del archivo .lua', 'Nom du fichier .lua')}
               />
 
-              {/* AST / Syntax Status Badge */}
+              {workspaceLuaFiles.length > 0 && onSelectWorkspaceLua && (
+                <div className="flex items-center space-x-1">
+                  <FolderOpen className="w-3 h-3 text-yellow-400/70 shrink-0" />
+                  <select
+                    value=""
+                    onChange={e => {
+                      if (e.target.value) onSelectWorkspaceLua(e.target.value);
+                    }}
+                    className="bg-slate-950 border border-yellow-900/50 text-yellow-300 font-mono text-[10px] py-0.5 px-1.5 rounded outline-none focus:border-yellow-500 cursor-pointer max-w-[180px]"
+                    title={tr(lang, 'Load .lua script from Workspace', 'Cargar script .lua del Workspace', 'Charger un script .lua du Workspace')}
+                  >
+                    <option value="">
+                      {tr(lang, `Switch LUA (${workspaceLuaFiles.length})...`, `Cambiar LUA (${workspaceLuaFiles.length})...`, `Changer LUA (${workspaceLuaFiles.length})...`)}
+                    </option>
+                    {workspaceLuaFiles.map(file => (
+                      <option
+                        key={file.webkitRelativePath || file.name}
+                        value={file.webkitRelativePath || file.name}
+                        className="bg-slate-900 text-slate-200"
+                      >
+                        {file.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {analysis.syntaxError ? (
                 <button
                   onClick={() => scrollToLine(analysis.syntaxError!.line)}
-                  className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-red-500/15 text-red-300 border border-red-500/40 hover:bg-red-500/25 transition-colors cursor-pointer"
+                  className="text-[10px] text-red-400 font-mono font-bold bg-red-500/15 border border-red-500/40 px-2 py-0.5 rounded flex items-center space-x-1 hover:bg-red-500/25 transition-colors cursor-pointer"
                   title={analysis.syntaxError.message}
                 >
                   <AlertTriangle className="w-3 h-3 text-red-400" />
                   <span>{tr(lang, 'Error Line', 'Error Línea', 'Erreur Ligne')} {analysis.syntaxError.line}</span>
                 </button>
               ) : (
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                  <span>{tr(lang, 'Valid Lua 5.0', 'Lua 5.0 Válido', 'Lua 5.0 Valide')}</span>
-                </span>
+                <button
+                  onClick={() => {
+                    setShowRightPanel(true);
+                    setRightTab('diagnostics');
+                  }}
+                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded flex items-center space-x-1 cursor-pointer border ${
+                    errorCount > 0
+                      ? 'text-red-400 bg-red-500/15 border-red-500/40'
+                      : warningCount > 0
+                      ? 'text-amber-400 bg-amber-500/15 border-amber-500/40'
+                      : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
+                  }`}
+                >
+                  <CheckCircle2 className="w-3 h-3" />
+                  <span>
+                    {errorCount > 0
+                      ? `${errorCount} ${tr(lang, 'Lua 5.0 Errors', 'Errores Lua 5.0', 'Erreurs Lua 5.0')}`
+                      : warningCount > 0
+                      ? `${warningCount} ${tr(lang, 'EaW Warnings', 'Avisos EaW', 'Alertes EaW')}`
+                      : tr(lang, 'Valid Lua 5.0', 'Lua 5.0 Válido', 'Lua 5.0 Valide')}
+                  </span>
+                </button>
               )}
-            </div>
-            <div className="flex items-center gap-3 text-[10px] text-slate-400 mt-0.5 font-mono">
-              <span>{analysis.lineCount} {tr(lang, 'lines', 'líneas', 'lignes')}</span>
-              <span>•</span>
-              <span>{analysis.symbols.filter(s => s.kind === 'function').length} {tr(lang, 'functions', 'funciones', 'fonctions')}</span>
-              <span>•</span>
-              <span>{analysis.symbols.filter(s => s.kind === 'state').length} {tr(lang, 'states', 'estados', 'états')}</span>
-              <span>•</span>
-              <span>{tr(lang, 'Active Line:', 'Línea activa:', 'Ligne active :')} {activeLine}</span>
             </div>
           </div>
         </div>
 
-        {/* Right Toolbar Controls */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {/* Workspace .lua Switcher */}
-          {workspaceLuaFiles.length > 0 && onSelectWorkspaceLua && (
-            <div className="relative flex items-center bg-slate-950 border border-yellow-900/50 rounded-sm px-2 py-1 mr-1">
-              <FolderOpen className="w-3.5 h-3.5 text-yellow-400 mr-1.5 shrink-0" />
-              <select
-                value=""
-                onChange={e => {
-                  if (e.target.value) onSelectWorkspaceLua(e.target.value);
-                }}
-                className="bg-transparent text-[10px] font-mono text-yellow-300 focus:outline-none max-w-[160px] truncate cursor-pointer"
-                title={tr(lang, 'Load .lua script from Workspace', 'Cargar script .lua del Workspace', 'Charger un script .lua du Workspace')}
-              >
-                <option value="" className="bg-slate-900 text-slate-400">
-                  {tr(lang, `Mod Scripts (${workspaceLuaFiles.length})...`, `Scripts del Mod (${workspaceLuaFiles.length})...`, `Scripts du Mod (${workspaceLuaFiles.length})...`)}
-                </option>
-                {workspaceLuaFiles.map(file => (
-                  <option
-                    key={file.webkitRelativePath || file.name}
-                    value={file.webkitRelativePath || file.name}
-                    className="bg-slate-900 text-slate-200"
-                  >
-                    {file.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
+        {/* Right Primary Actions — Anchored to Right Margin */}
+        <div className="flex items-center flex-wrap gap-1.5 ml-auto">
           <input
             ref={fileInputRef}
             type="file"
@@ -1316,17 +1337,9 @@ export const LuaEditor: React.FC<LuaEditorProps> = ({
           />
 
           <button
-            onClick={() => fileInputRef.current?.click()}
-            className="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-sm border border-slate-700/80 transition-colors cursor-pointer"
-            title={tr(lang, 'Import .LUA file from disk', 'Importar archivo .LUA desde disco', 'Importer un fichier .LUA du disque')}
-          >
-            <Upload className="w-3.5 h-3.5" />
-          </button>
-
-          <button
             onClick={handleUndo}
             disabled={historyIndex <= 0}
-            className="p-1.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-slate-300 rounded-sm border border-slate-700/80 transition-colors cursor-pointer"
+            className="p-1.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-30 text-slate-300 border border-slate-700/70 rounded-sm transition-colors cursor-pointer"
             title={tr(lang, 'Undo (Ctrl+Z)', 'Deshacer (Ctrl+Z)', 'Annuler (Ctrl+Z)')}
           >
             <Undo2 className="w-3.5 h-3.5" />
@@ -1334,18 +1347,20 @@ export const LuaEditor: React.FC<LuaEditorProps> = ({
           <button
             onClick={handleRedo}
             disabled={historyIndex >= history.length - 1}
-            className="p-1.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-slate-300 rounded-sm border border-slate-700/80 transition-colors cursor-pointer"
+            className="p-1.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-30 text-slate-300 border border-slate-700/70 rounded-sm transition-colors cursor-pointer"
             title={tr(lang, 'Redo (Ctrl+Y)', 'Rehacer (Ctrl+Y)', 'Rétablir (Ctrl+Y)')}
           >
             <Redo2 className="w-3.5 h-3.5" />
           </button>
 
+          <div className="h-4 w-px bg-slate-800 mx-0.5" />
+
           <button
             onClick={() => setShowFindBar(prev => !prev)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-wider border transition-colors cursor-pointer ${
+            className={`px-2.5 py-1.5 border text-[10px] font-mono font-bold uppercase tracking-wider transition-colors flex items-center space-x-1.5 rounded-sm cursor-pointer ${
               showFindBar
                 ? 'bg-yellow-500/20 border-yellow-500/60 text-yellow-300'
-                : 'bg-slate-900 hover:bg-slate-800 border-slate-700/80 text-slate-300'
+                : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300'
             }`}
             title={tr(lang, 'Find & Replace (Ctrl+F)', 'Buscar y Reemplazar (Ctrl+F)', 'Rechercher et Remplacer (Ctrl+F)')}
           >
@@ -1355,34 +1370,41 @@ export const LuaEditor: React.FC<LuaEditorProps> = ({
 
           <button
             onClick={handleFormatLua}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-yellow-300 rounded-sm text-[10px] font-mono font-bold uppercase tracking-wider border border-slate-700/80 transition-colors cursor-pointer"
+            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-bold text-[10px] font-mono uppercase tracking-wider rounded-sm transition-colors flex items-center space-x-1.5 cursor-pointer"
             title={tr(lang, 'Auto-indent Lua blocks', 'Auto-indentar bloques Lua', 'Auto-indenter les blocs Lua')}
           >
-            <Wand2 className="w-3.5 h-3.5" />
-            <span className="hidden lg:inline">{tr(lang, 'Format', 'Formatear', 'Formater')}</span>
+            <Wand2 className="w-3.5 h-3.5 text-yellow-400" />
+            <span className="hidden sm:inline">{tr(lang, 'Format', 'Formatear', 'Formater')}</span>
           </button>
 
           <button
             onClick={handleStripComments}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-sm text-[10px] font-mono font-bold uppercase tracking-wider border border-slate-700/80 transition-colors cursor-pointer"
+            className="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 rounded-sm transition-colors cursor-pointer"
             title={tr(lang, 'Strip Lua comments (--)', 'Eliminar comentarios (--)', 'Supprimer les commentaires (--)')}
           >
             <Eraser className="w-3.5 h-3.5" />
-            <span className="hidden xl:inline">{tr(lang, 'Strip --', 'Limpiar --', 'Nettoyer --')}</span>
           </button>
 
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 rounded-sm text-[10px] font-mono font-bold uppercase tracking-wider border border-slate-700/80 transition-colors cursor-pointer"
+            className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 font-mono text-[10px] uppercase tracking-wider rounded-sm flex items-center space-x-1 cursor-pointer"
             title={tr(lang, 'Copy entire script', 'Copiar todo el script', 'Copier tout le script')}
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            <span className="hidden xl:inline">{copied ? tr(lang, 'Copied', 'Copiado', 'Copié') : tr(lang, 'Copy', 'Copiar', 'Copier')}</span>
+            <span className="hidden lg:inline">{copied ? tr(lang, 'Copied', 'Copiado', 'Copié') : tr(lang, 'Copy', 'Copiar', 'Copier')}</span>
+          </button>
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 rounded-sm transition-colors cursor-pointer"
+            title={tr(lang, 'Import .LUA file from disk', 'Importar archivo .LUA desde disco', 'Importer un fichier .LUA du disque')}
+          >
+            <Upload className="w-3.5 h-3.5" />
           </button>
 
           <button
             onClick={() => updateContent(initialContent)}
-            className="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-sm border border-slate-700/80 transition-colors cursor-pointer"
+            className="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 rounded-sm transition-colors cursor-pointer"
             title={tr(lang, 'Reset to initial content', 'Restaurar contenido inicial', 'Restaurer le contenu initial')}
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -1390,15 +1412,15 @@ export const LuaEditor: React.FC<LuaEditorProps> = ({
 
           <button
             onClick={() => setShowRightPanel(prev => !prev)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-sm text-[10px] font-mono font-bold uppercase tracking-wider border transition-colors cursor-pointer ${
+            className={`px-2.5 py-1.5 border text-[10px] font-mono font-bold uppercase tracking-wider transition-colors flex items-center space-x-1 rounded-sm cursor-pointer ${
               showRightPanel
-                ? 'bg-yellow-500/20 border-yellow-500/60 text-yellow-200'
-                : 'bg-slate-900 hover:bg-slate-800 border-slate-700/80 text-slate-300'
+                ? 'bg-yellow-950/60 border-yellow-500/50 text-yellow-300'
+                : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
             }`}
             title={tr(lang, 'Toggle Alamo Lua Inspector & Diagnostics', 'Mostrar/Ocultar Inspector y Diagnósticos Alamo Lua', 'Afficher/Masquer l\'Inspecteur et Diagnostics Alamo Lua')}
           >
             <Cpu className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">{tr(lang, 'Inspector', 'Inspector', 'Inspecteur')}</span>
+            <span className="hidden xl:inline">{tr(lang, 'Inspector', 'Inspector', 'Inspecteur')}</span>
             {(errorCount > 0 || warningCount > 0) && (
               <span
                 className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
@@ -1412,7 +1434,7 @@ export const LuaEditor: React.FC<LuaEditorProps> = ({
 
           <button
             onClick={() => setShowHelpModal(true)}
-            className="p-1.5 bg-slate-900 hover:bg-slate-800 text-yellow-300 rounded-sm border border-slate-700/80 transition-colors cursor-pointer"
+            className="p-1.5 border border-yellow-800/50 bg-yellow-950/30 hover:bg-yellow-900/50 text-yellow-300 rounded-sm transition-colors cursor-pointer"
             title={tr(lang, 'Alamo Lua 5.0 Scripting Manual', 'Manual de Scripting Alamo Lua 5.0', 'Manuel de Scripting Alamo Lua 5.0')}
           >
             <HelpCircle className="w-3.5 h-3.5" />
@@ -1420,10 +1442,10 @@ export const LuaEditor: React.FC<LuaEditorProps> = ({
 
           <button
             onClick={() => onSave(content, editableFileName)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-yellow-500 hover:bg-yellow-400 text-slate-950 rounded-sm text-[10px] font-mono font-bold uppercase tracking-widest transition-colors shadow-[0_0_15px_rgba(234,179,8,0.2)] cursor-pointer"
+            className="px-3.5 py-1.5 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold text-[10px] font-mono uppercase tracking-widest transition-colors flex items-center space-x-1.5 rounded-sm cursor-pointer shadow-[0_0_12px_rgba(234,179,8,0.3)]"
           >
             <Save className="w-3.5 h-3.5" />
-            <span>{tr(lang, 'Save .LUA', 'Guardar .LUA', 'Enregistrer .LUA')}</span>
+            <span>{tr(lang, 'Save', 'Guardar', 'Enregistrer')}</span>
           </button>
 
           <button

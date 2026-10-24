@@ -10,91 +10,127 @@ export interface MtdIcon {
 }
 
 export function parseMtd(buffer: ArrayBuffer): MtdIcon[] {
+  if (!buffer || buffer.byteLength < 4) {
+    return [];
+  }
+
   const dt = new DataView(buffer);
-  
-  if (dt.byteLength >= 4) {
+
+  if (dt.byteLength >= 16) {
     const magic = String.fromCharCode(...new Uint8Array(buffer, 0, 4));
     if (magic === "MTD ") {
       // ALAMO FORMAT
       let offset = 4;
-      const version = dt.getUint32(offset, true); offset += 4;
-      const count = dt.getUint32(offset, true); offset += 4;
-      
-      const texNameLen = dt.getUint32(offset, true); offset += 4;
+      const _version = dt.getUint32(offset, true);
+      offset += 4;
+      const rawCount = dt.getUint32(offset, true);
+      offset += 4;
+
+      const texNameLen = dt.getUint32(offset, true);
+      offset += 4;
+      if (texNameLen > buffer.byteLength - offset) {
+        return [];
+      }
       // Skip texture name
       offset += texNameLen;
-      
+
+      const maxPossible = Math.min(rawCount, Math.floor((buffer.byteLength - offset) / 20), 25000);
       const icons: MtdIcon[] = [];
-      for (let i = 0; i < count; i++) {
+      const textDecoder = new TextDecoder('ascii');
+
+      for (let i = 0; i < maxPossible; i++) {
         if (offset + 4 > buffer.byteLength) break;
-        const nameLen = dt.getUint32(offset, true); offset += 4;
-        
-        if (offset + nameLen > buffer.byteLength) break;
-        let iconName = new TextDecoder('ascii').decode(new Uint8Array(buffer, offset, nameLen));
+        const nameLen = dt.getUint32(offset, true);
+        offset += 4;
+
+        if (nameLen > 512 || offset + nameLen + 16 > buffer.byteLength) break;
+        let iconName = textDecoder.decode(new Uint8Array(buffer, offset, nameLen));
         offset += nameLen;
-        // remove null if present
-        if (iconName.endsWith('\0')) iconName = iconName.slice(0, -1);
-        
-        const xLeft = dt.getFloat32(offset, true); offset += 4;
-        const yTop = dt.getFloat32(offset, true); offset += 4;
-        const xRight = dt.getFloat32(offset, true); offset += 4;
-        const yBottom = dt.getFloat32(offset, true); offset += 4;
-        
+        const nullPos = iconName.indexOf('\0');
+        if (nullPos !== -1) iconName = iconName.slice(0, nullPos);
+
+        const xLeftRaw = dt.getFloat32(offset, true);
+        offset += 4;
+        const yTopRaw = dt.getFloat32(offset, true);
+        offset += 4;
+        const xRightRaw = dt.getFloat32(offset, true);
+        offset += 4;
+        const yBottomRaw = dt.getFloat32(offset, true);
+        offset += 4;
+
+        const xLeft = Number.isFinite(xLeftRaw) ? Math.max(0, Math.round(xLeftRaw)) : 0;
+        const yTop = Number.isFinite(yTopRaw) ? Math.max(0, Math.round(yTopRaw)) : 0;
+        const xRight = Number.isFinite(xRightRaw) ? Math.max(xLeft, Math.round(xRightRaw)) : xLeft;
+        const yBottom = Number.isFinite(yBottomRaw) ? Math.max(yTop, Math.round(yBottomRaw)) : yTop;
+
         icons.push({
-          id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
-          name: iconName.toUpperCase(),
-          x: xLeft,
-          y: yTop,
-          width: xRight - xLeft,
-          height: yBottom - yTop,
-          alpha: true
+          id: crypto.randomUUID?.() || `${Date.now()}-${i}-${Math.random()}`,
+          name: iconName.trim().toUpperCase(),
+          x: Math.min(xLeft, 16384),
+          y: Math.min(yTop, 16384),
+          width: Math.min(Math.max(0, xRight - xLeft), 16384),
+          height: Math.min(Math.max(0, yBottom - yTop), 16384),
+          alpha: true,
         });
       }
       return icons;
     }
   }
 
-  // 81-BYTE FORMAT (Community Editor)
+  // 81-BYTE FORMAT (Community / Standard EAW Editor)
   let offset = 0;
-  
-  const iconCount = dt.getUint32(offset, true);
+  const rawIconCount = dt.getUint32(offset, true);
   offset += 4;
-  
+
+  const maxRecordsInBuffer = Math.floor((buffer.byteLength - 4) / 81);
+  const iconCount = Math.min(rawIconCount, maxRecordsInBuffer, 25000);
+
   const icons: MtdIcon[] = [];
   const textDecoder = new TextDecoder('ascii');
-  
+
   for (let i = 0; i < iconCount; i++) {
     if (offset + 81 > buffer.byteLength) {
       break;
     }
-    
+
     const nameBytes = new Uint8Array(buffer, offset, 64);
     offset += 64;
-    
+
     let nameStr = textDecoder.decode(nameBytes);
     const nullIdx = nameStr.indexOf('\0');
     if (nullIdx !== -1) {
       nameStr = nameStr.substring(0, nullIdx);
     }
-    
-    const x = dt.getUint32(offset, true); offset += 4;
-    const y = dt.getUint32(offset, true); offset += 4;
-    const width = dt.getUint32(offset, true); offset += 4;
-    const height = dt.getUint32(offset, true); offset += 4;
-    
-    const alphaByte = dt.getUint8(offset); offset += 1;
-    
+
+    const rawX = dt.getUint32(offset, true);
+    offset += 4;
+    const rawY = dt.getUint32(offset, true);
+    offset += 4;
+    const rawW = dt.getUint32(offset, true);
+    offset += 4;
+    const rawH = dt.getUint32(offset, true);
+    offset += 4;
+
+    const alphaByte = dt.getUint8(offset);
+    offset += 1;
+
+    // Guard against signed-to-unsigned wraparound (e.g., 0xFFFFFFFF)
+    const x = rawX > 32768 ? 0 : rawX;
+    const y = rawY > 32768 ? 0 : rawY;
+    const width = rawW > 32768 ? 0 : rawW;
+    const height = rawH > 32768 ? 0 : rawH;
+
     icons.push({
-      id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
-      name: nameStr.toUpperCase(),
-      x, 
-      y, 
-      width, 
+      id: crypto.randomUUID?.() || `${Date.now()}-${i}-${Math.random()}`,
+      name: nameStr.trim().toUpperCase(),
+      x,
+      y,
+      width,
       height,
-      alpha: alphaByte !== 0
+      alpha: alphaByte !== 0,
     });
   }
-  
+
   return icons;
 }
 

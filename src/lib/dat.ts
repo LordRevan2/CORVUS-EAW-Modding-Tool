@@ -18,7 +18,7 @@ for (let i = 0; i < 256; i++) {
   CRC32_TABLE[i] = crc >>> 0;
 }
 
-function getCrc32(str: string): number {
+export function getCrc32(str: string): number {
   let crc = 0xFFFFFFFF;
   for (let i = 0; i < str.length; i++) {
     // Petroglyph CRC computation truncates UTF-16 chars to 8-bit
@@ -26,6 +26,11 @@ function getCrc32(str: string): number {
     crc = (crc >>> 8) ^ CRC32_TABLE[(crc ^ charCode) & 0xFF];
   }
   return (~crc) >>> 0;
+}
+
+export function formatCrc32Hex(key: string): string {
+  const crc = getCrc32(key);
+  return '0x' + crc.toString(16).toUpperCase().padStart(8, '0');
 }
 
 function parseIndexedDat(buffer: ArrayBuffer): DatRecord[] {

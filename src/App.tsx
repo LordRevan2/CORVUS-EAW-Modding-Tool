@@ -64,12 +64,14 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
   });
 
   const [datRecords, setDatRecords] = useState<DatRecord[] | null>(null);
+  const [isDatEditorOpen, setIsDatEditorOpen] = useState<boolean>(false);
   const [datFormat, setDatFormat] = useState<'indexed' | 'sequential_mult2' | 'sequential_mult1'>('indexed');
   const [datFileName, setDatFileName] = useState<string>('MasterTextFile.dat');
 
   const [mtdIcons, setMtdIcons] = useState<MtdIcon[] | null>(null);
   const [mtdFileName, setMtdFileName] = useState<string>('Mt_commandbar.mtd');
   const [mtdInitialTexture, setMtdInitialTexture] = useState<File | null>(null);
+  const [mtdInitialTextureDataUrl, setMtdInitialTextureDataUrl] = useState<string | null>(null);
 
   const [storyDoc, setStoryDoc] = useState<XMLDocument | null>(null);
   const [storyEvents, setStoryEvents] = useState<StoryEvent[] | null>(null);
@@ -297,6 +299,7 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
         setDatRecords(parsed.records);
         setDatFormat(parsed.format);
         setDatFileName(datFile.name);
+        setIsDatEditorOpen(true);
     } catch (err: any) {
         setError(err.message || 'Error parsing .DAT file');
     }
@@ -317,6 +320,7 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
             return fname === `${baseName}.tga` || fname === `${baseName}.png` || fname === `${baseName}.jpg`;
         });
         setMtdInitialTexture(mtdTexture || null);
+        setMtdInitialTextureDataUrl(null);
     } catch (err: any) {
         setError(err.message || 'Error parsing .MTD file');
     }
@@ -652,6 +656,7 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
         setDatRecords(parsed.records);
         setDatFormat(parsed.format);
         setDatFileName(file.name);
+        setIsDatEditorOpen(true);
       } catch (err: any) {
         setError(err.message || t.errors.importDat);
       }
@@ -678,6 +683,7 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
         value: 'Caza Ala-X'
       }
     ]);
+    setIsDatEditorOpen(true);
   };
 
   const handleMtdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -698,28 +704,95 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
     let mtdFile = files.find(f => f.name.toLowerCase().endsWith('.mtd'));
     let textureFile = files.find(f => f.name.toLowerCase().endsWith('.tga') || f.name.toLowerCase().endsWith('.png') || f.name.toLowerCase().endsWith('.jpg'));
 
-    if (!mtdFile && files.length > 0 && !textureFile) {
-      mtdFile = files[0];
+    if (!mtdFile && textureFile) {
+      const texBase = textureFile.name.replace(/\.[^/.]+$/, '').toLowerCase();
+      mtdFile = workspaceFiles.find(f => f.name.toLowerCase() === `${texBase}.mtd`);
     }
-    
+
     if (mtdFile) {
+      if (!textureFile) {
+        const baseName = mtdFile.name.replace(/\.[^/.]+$/, '').toLowerCase();
+        textureFile = workspaceFiles.find(f => {
+          const fname = f.name.toLowerCase();
+          return fname === `${baseName}.tga` || fname === `${baseName}.png` || fname === `${baseName}.jpg`;
+        });
+      }
       const reader = new FileReader();
       reader.onload = (event) => {
         try {
           const buffer = event.target?.result as ArrayBuffer;
           const parsed = parseMtd(buffer);
           setMtdIcons(parsed);
-          setMtdFileName(mtdFile.name);
+          setMtdFileName(mtdFile!.name);
           setMtdInitialTexture(textureFile || null);
+          setMtdInitialTextureDataUrl(null);
         } catch (err: any) {
           setError(err.message || 'Error processing MTD file.');
         }
       };
       reader.onerror = () => setError('Error reading MTD file');
       reader.readAsArrayBuffer(mtdFile);
+    } else if (textureFile) {
+      setMtdFileName(textureFile.name.replace(/\.[^/.]+$/, '.mtd'));
+      setMtdInitialTexture(textureFile);
+      setMtdInitialTextureDataUrl(null);
+      setMtdIcons([]);
     }
 
     if (mtdFileInputRef.current) mtdFileInputRef.current.value = '';
+  };
+
+  const handleCreateNewMtd = () => {
+    setError(null);
+    const starterSpecs = [
+      { name: 'I_BUTTON_X_WING.TGA', label: 'X-WING', color: '#06b6d4', x: 4, y: 4, w: 60, h: 48 },
+      { name: 'I_BUTTON_TIE_FIGHTER.TGA', label: 'TIE/LN', color: '#10b981', x: 68, y: 4, w: 60, h: 48 },
+      { name: 'I_BUTTON_STAR_DESTROYER.TGA', label: 'ISD-I', color: '#f59e0b', x: 132, y: 4, w: 60, h: 48 },
+      { name: 'I_BUTTON_CALAMARI_CRUISER.TGA', label: 'MC80', color: '#3b82f6', x: 196, y: 4, w: 56, h: 48 },
+      { name: 'I_BUTTON_AT_AT.TGA', label: 'AT-AT', color: '#ef4444', x: 4, y: 56, w: 60, h: 48 },
+      { name: 'I_BUTTON_DARTH_VADER.TGA', label: 'VADER', color: '#a855f7', x: 68, y: 56, w: 60, h: 48 },
+      { name: 'I_BUTTON_MILLENNIUM_FALCON.TGA', label: 'FALCON', color: '#eab308', x: 132, y: 56, w: 60, h: 48 },
+      { name: 'I_BUTTON_BOBA_FETT.TGA', label: 'BOBA', color: '#14b8a6', x: 196, y: 56, w: 56, h: 48 },
+    ];
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.clearRect(0, 0, 256, 256);
+      starterSpecs.forEach((s) => {
+        ctx.fillStyle = '#091526';
+        ctx.fillRect(s.x, s.y, s.w, s.h);
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(s.x + 1, s.y + 1, s.w - 2, s.h - 2);
+        // Tactical corner diamond
+        ctx.fillStyle = s.color;
+        ctx.beginPath();
+        ctx.arc(s.x + s.w / 2, s.y + 18, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(s.label, s.x + s.w / 2, s.y + 39);
+      });
+    }
+
+    const sampleIcons: MtdIcon[] = starterSpecs.map((s, idx) => ({
+      id: `mtd-starter-${idx}-${Date.now()}`,
+      name: s.name,
+      x: s.x,
+      y: s.y,
+      width: s.w,
+      height: s.h,
+      alpha: true,
+    }));
+
+    setMtdFileName('Mt_commandbar.mtd');
+    setMtdInitialTexture(null);
+    setMtdInitialTextureDataUrl(canvas.toDataURL('image/png'));
+    setMtdIcons(sampleIcons);
   };
 
   const handleStoryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1378,15 +1451,27 @@ end
             initialIcons={mtdIcons}
             fileName={mtdFileName}
             initialTextureFile={mtdInitialTexture}
-            onClose={() => setMtdIcons(null)}
+            initialTextureDataUrl={mtdInitialTextureDataUrl}
+            workspaceFiles={workspaceFiles}
+            onClose={() => {
+              setMtdIcons(null);
+              setMtdInitialTexture(null);
+              setMtdInitialTextureDataUrl(null);
+            }}
             onError={setError}
           />
-        ) : datRecords ? (
+        ) : isDatEditorOpen && datRecords ? (
           <DatEditor 
             initialRecords={datRecords}
             fileName={datFileName}
             format={datFormat}
-            onClose={() => setDatRecords(null)}
+            workspaceFiles={workspaceFiles}
+            onUpdateRecords={(recs, fname, fmt) => {
+              setDatRecords(recs);
+              if (fname) setDatFileName(fname);
+              if (fmt) setDatFormat(fmt);
+            }}
+            onClose={() => setIsDatEditorOpen(false)}
           />
         ) : xmlDoc ? (
           <div className="flex-1 flex flex-col min-w-0">
@@ -1957,7 +2042,7 @@ end
                   {
                     id: 'dat',
                     category: 'localization',
-                    version: '1.2',
+                    version: '1.3',
                     title: t.home.datTitle,
                     desc: t.home.datDesc ? t.home.datDesc.replace('.DAT', '<code class="text-purple-400 font-mono font-bold">.DAT</code>') : '',
                     icon: <FileText className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />,
@@ -1969,6 +2054,15 @@ end
                       const datFiles = workspaceFiles.filter(f => f.name.toLowerCase().endsWith('.dat'));
                       return (
                         <div className="space-y-1.5 mt-auto">
+                          {datRecords && (
+                            <button
+                              onClick={() => setIsDatEditorOpen(true)}
+                              className="w-full flex items-center justify-center space-x-2 bg-purple-500 hover:bg-purple-400 text-slate-950 font-bold uppercase tracking-widest py-2 text-[10px] transition-colors cursor-pointer rounded-sm font-mono"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span className="truncate max-w-[200px]">{datFileName} ({datRecords.length})</span>
+                            </button>
+                          )}
                           {datFiles.length > 0 ? (
                             <select 
                                onChange={(e) => {
@@ -2006,7 +2100,7 @@ end
                   {
                     id: 'mtd',
                     category: 'localization',
-                    version: '1.1',
+                    version: '1.3',
                     title: t.home.mtdTitle,
                     desc: t.home.mtdDesc ? t.home.mtdDesc.replace('.MTD', '<code class="text-amber-400 font-mono">.MTD</code>') : '',
                     icon: <SettingsIcon className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />,
@@ -2017,7 +2111,7 @@ end
                     renderAction: () => {
                       const mtdFiles = workspaceFiles.filter(f => f.name.toLowerCase().endsWith('.mtd'));
                       return (
-                        <div className="space-y-2 mt-auto">
+                        <div className="space-y-1.5 mt-auto">
                           {mtdFiles.length > 0 ? (
                             <select 
                                onChange={(e) => {
@@ -2042,6 +2136,12 @@ end
                               <span>{t.home.loadMtd}</span>
                             </button>
                           )}
+                          <button
+                            onClick={handleCreateNewMtd}
+                            className="w-full flex items-center justify-center space-x-2 border border-amber-800/50 hover:bg-amber-900/20 text-amber-400 hover:text-amber-300 font-bold uppercase tracking-widest py-1.5 text-[9px] transition-colors cursor-pointer rounded-sm font-sans"
+                          >
+                            <span>{tr(lang, 'New Sample .MTD Atlas', 'Crear Atlas .MTD Base', 'Nouvel Atlas .MTD')}</span>
+                          </button>
                         </div>
                       );
                     }
@@ -2152,7 +2252,7 @@ end
                   {
                     id: 'rawLua',
                     category: 'raw_code',
-                    version: '2.1',
+                    version: '2.2',
                     title: t.home?.luaTitle || "Raw LUA Editor",
                     desc: t.home?.luaDesc || "Alamo Engine Lua 5.0 IDE featuring a live AST symbol outline, categorized Petroglyph API commands, script templates, state/thread generator, and semantic diagnostics.",
                     icon: <FileText className="w-5 h-5 text-yellow-400 group-hover:scale-110 transition-transform" />,

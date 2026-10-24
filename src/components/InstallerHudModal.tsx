@@ -127,6 +127,19 @@ export default function InstallerHudModal({ isOpen, onClose }: InstallerHudModal
   const nshPreview = `; ============================================================================
 ; CORVUS // EAW MODDING TOOL - CUSTOM DARK TACTICAL HUD NSIS SCRIPT (v${packageJson.version})
 ; ============================================================================
+!ifdef MUI_BGCOLOR
+  !undef MUI_BGCOLOR
+!endif
+!define MUI_BGCOLOR "020617"
+!ifdef MUI_TEXTCOLOR
+  !undef MUI_TEXTCOLOR
+!endif
+!define MUI_TEXTCOLOR "E2E8F0"
+!ifdef MUI_LICENSEPAGE_BGCOLOR
+  !undef MUI_LICENSEPAGE_BGCOLOR
+!endif
+!define MUI_LICENSEPAGE_BGCOLOR "0F172A"
+
 !macro customHeader
   !ifdef MUI_BGCOLOR
     !undef MUI_BGCOLOR
@@ -136,10 +149,17 @@ export default function InstallerHudModal({ isOpen, onClose }: InstallerHudModal
     !undef MUI_TEXTCOLOR
   !endif
   !define MUI_TEXTCOLOR "E2E8F0"
+  !ifdef MUI_LICENSEPAGE_BGCOLOR
+    !undef MUI_LICENSEPAGE_BGCOLOR
+  !endif
   !define MUI_LICENSEPAGE_BGCOLOR "0F172A"
   InstProgressFlags smooth colored
   XPStyle on
   BrandingText "CORVUS // GALACTIC ENGINE v${packageJson.version} — TACTICAL SETUP"
+!macroend
+
+!macro customWelcomePage
+  !insertmacro MUI_PAGE_WELCOME
 !macroend
 
 !macro customInstall
@@ -390,7 +410,7 @@ export default function InstallerHudModal({ isOpen, onClose }: InstallerHudModal
                         { name: 'Story Plots XML', ver: 'v2.1', color: 'text-emerald-400 border-emerald-900/50' },
                         { name: 'Unit Stat Balance', ver: 'v1.1', color: 'text-emerald-400 border-emerald-900/50' },
                         { name: 'Strings .DAT Editor', ver: 'v1.2', color: 'text-purple-400 border-purple-900/50' },
-                        { name: 'Mega-Textures .MTD', ver: 'v1.1', color: 'text-amber-400 border-amber-900/50' },
+                        { name: 'Mega-Textures .MTD', ver: 'v1.2', color: 'text-amber-400 border-amber-900/50' },
                         { name: 'Dialog & Holo .TXT', ver: 'v1.1', color: 'text-cyan-400 border-cyan-900/50' },
                         { name: 'Raw XML Code DOM', ver: 'v2.1', color: 'text-rose-400 border-rose-900/50' },
                         { name: 'Raw LUA 5.0 IDE', ver: 'v2.1', color: 'text-yellow-400 border-yellow-900/50' },
@@ -466,7 +486,7 @@ export default function InstallerHudModal({ isOpen, onClose }: InstallerHudModal
    • Editor de Eventos de Historia - Story_*.xml (v2.1)
    • Editor de Balance de Unidades - Space/Ground (v1.1)
    • Compilador Binario de Traducciones .DAT UTF-16LE (v1.2)
-   • Gestor de Atlas Mega-Texturas .MTD + UV (v1.1)
+   • Gestor de Atlas Mega-Texturas .MTD + UV (v1.2)
    • Editor de Diálogos y Simulador de Holo-Terminal .TXT (v1.1)
    • Editor de Código XML DOM (v2.1)
    • Entorno de Desarrollo LUA 5.0 con Auditor Semántico (v2.1)
