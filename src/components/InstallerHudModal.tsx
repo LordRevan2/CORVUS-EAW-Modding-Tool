@@ -52,18 +52,18 @@ export default function InstallerHudModal({ isOpen, onClose }: InstallerHudModal
     setInstallProgress(0);
     setInstallComplete(false);
     setInstallLogs([
-      `[00:00.01] INIT // CORVUS Tactical Setup Wizard v${packageJson.version} (WIN64-NSIS)`,
+      `[00:00.01] INIT // CORVUS Tactical Setup Wizard v${packageJson.version} // REVAN (WIN64-NSIS)`,
       `[00:00.04] TARGET // ${installDir}`,
     ]);
 
     const logSteps = [
       { pct: 14, msg: '[00:00.35] VERIFY // Comprobando integridad del paquete Electron 42.3.3...' },
       { pct: 28, msg: '[00:00.70] EXTRACT // Desempaquetando recursos core (app.asar — 94.2 MB)...' },
-      { pct: 45, msg: '[00:01.10] MODULE // Registrando Galaxy & Planet Systems Editor (v2.5) + GC (v3.1)...' },
-      { pct: 62, msg: '[00:01.45] MODULE // Configurando compiladores binarios .DAT (UTF-16LE) y .MTD (MTDF)...' },
-      { pct: 78, msg: '[00:01.85] MODULE // Inicializando AST Parser de Lua 5.0 y catálogo de Petroglyph...' },
+      { pct: 45, msg: '[00:01.10] MODULE // Registrando Galaxy (v2.7), GC (v3.3), Story Graph 2D (v2.2) y Tech Tree (v1.0)...' },
+      { pct: 62, msg: '[00:01.45] MODULE // Configurando Unidades TTK (v1.4), HardPoints (v1.1), Audio SFXEvents (v1.0), .DAT (v1.3) y .MTD (v1.3)...' },
+      { pct: 78, msg: '[00:01.85] MODULE // Inicializando AST Parser de Lua 5.0 (v2.2) y Auditor Global de Mods (v1.0)...' },
       { pct: 91, msg: '[00:02.20] SYSTEM // Creando accesos directos e icono multi-resolución (icon.ico)...' },
-      { pct: 100, msg: `[00:02.55] READY  // Instalación de CORVUS v${packageJson.version} completada con éxito.` },
+      { pct: 100, msg: `[00:02.55] READY  // Instalación de CORVUS v${packageJson.version} // REVAN completada con éxito.` },
     ];
 
     let idx = 0;
@@ -192,10 +192,10 @@ export default function InstallerHudModal({ isOpen, onClose }: InstallerHudModal
               <span className="text-xs font-bold tracking-widest uppercase italic text-slate-100">
                 CORVUS <span className="font-extralight text-cyan-300/80 not-italic font-mono text-[10px]">// TACTICAL SETUP WIZARD</span>
               </span>
-              {/* Silver Badge with Gold Border */}
-              <div className="relative overflow-hidden px-2 py-0.5 border border-amber-400/80 bg-gradient-to-b from-slate-200/25 via-slate-300/15 to-slate-400/20 shadow-[0_0_10px_rgba(251,191,36,0.25)] rounded flex items-center">
-                <span className="text-[9px] font-mono font-bold tracking-widest text-slate-200">
-                  v{packageJson.version}
+              {/* Purple Badge with Gold Border (Revan Edition) */}
+              <div className="relative overflow-hidden px-2.5 py-0.5 border border-amber-400/90 bg-gradient-to-r from-purple-950/95 via-purple-700/75 to-fuchsia-950/95 shadow-[0_0_12px_rgba(168,85,247,0.45)] rounded flex items-center">
+                <span className="text-[9px] font-mono font-bold tracking-widest text-purple-100 whitespace-nowrap">
+                  v{packageJson.version} <span className="text-amber-300 font-black">// REVAN</span>
                 </span>
               </div>
             </div>
@@ -256,10 +256,10 @@ export default function InstallerHudModal({ isOpen, onClose }: InstallerHudModal
                 // EAW MODDING TOOL
               </span>
 
-              {/* Silver Badge with Gold Border */}
-              <div className="mt-2 px-3 py-0.5 rounded-sm bg-gradient-to-b from-slate-200 via-slate-300 to-slate-400 border border-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.3)]">
-                <span className="text-[9px] font-mono font-black tracking-widest text-slate-950">
-                  v{packageJson.version}
+              {/* Purple Badge with Gold Border (Revan Edition) */}
+              <div className="mt-2 px-3 py-0.5 rounded-sm bg-gradient-to-r from-purple-950 via-purple-800 to-fuchsia-950 border border-amber-400 shadow-[0_0_14px_rgba(168,85,247,0.45),0_0_6px_rgba(251,191,36,0.25)]">
+                <span className="text-[8.5px] font-mono font-black tracking-widest text-purple-100 whitespace-nowrap">
+                  v{packageJson.version} <span className="text-amber-300">// REVAN</span>
                 </span>
               </div>
 
@@ -358,8 +358,8 @@ export default function InstallerHudModal({ isOpen, onClose }: InstallerHudModal
                 </p>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-[9px] font-mono text-slate-400 uppercase">
-                  CORVUS v{packageJson.version}
+                <span className="text-[9px] font-mono text-purple-200 uppercase px-2 py-0.5 rounded-sm bg-purple-950/70 border border-amber-400/70">
+                  CORVUS v{packageJson.version} <strong className="text-amber-300">// REVAN</strong>
                 </span>
               </div>
             </div>
@@ -405,15 +405,19 @@ export default function InstallerHudModal({ isOpen, onClose }: InstallerHudModal
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono text-[10px]">
                       {[
-                        { name: 'Galaxy & Planets', ver: 'v2.5', color: 'text-cyan-400 border-cyan-900/50' },
-                        { name: 'Galactic Conquest', ver: 'v3.1', color: 'text-emerald-400 border-emerald-900/50' },
-                        { name: 'Story Plots XML', ver: 'v2.1', color: 'text-emerald-400 border-emerald-900/50' },
-                        { name: 'Unit Stat Balance', ver: 'v1.1', color: 'text-emerald-400 border-emerald-900/50' },
-                        { name: 'Strings .DAT Editor', ver: 'v1.2', color: 'text-purple-400 border-purple-900/50' },
-                        { name: 'Mega-Textures .MTD', ver: 'v1.2', color: 'text-amber-400 border-amber-900/50' },
+                        { name: 'Galaxy & Planets', ver: 'v2.7', color: 'text-cyan-400 border-cyan-900/50' },
+                        { name: 'Galactic Conquest', ver: 'v3.3', color: 'text-emerald-400 border-emerald-900/50' },
+                        { name: 'Story Plots 2D Graph', ver: 'v2.2', color: 'text-emerald-400 border-emerald-900/50' },
+                        { name: 'Unit & TTK Duel 1v1', ver: 'v1.4', color: 'text-emerald-400 border-emerald-900/50' },
+                        { name: 'HardPoints & Projectiles', ver: 'v1.1', color: 'text-rose-400 border-rose-900/50' },
+                        { name: 'Tech Tree & Factions', ver: 'v1.0', color: 'text-cyan-400 border-cyan-900/50' },
+                        { name: 'Audio SFXEvents.xml', ver: 'v1.0', color: 'text-purple-400 border-purple-900/50' },
+                        { name: 'Strings .DAT Editor', ver: 'v1.3', color: 'text-purple-400 border-purple-900/50' },
+                        { name: 'Mega-Textures .MTD', ver: 'v1.3', color: 'text-amber-400 border-amber-900/50' },
                         { name: 'Dialog & Holo .TXT', ver: 'v1.1', color: 'text-cyan-400 border-cyan-900/50' },
                         { name: 'Raw XML Code DOM', ver: 'v2.1', color: 'text-rose-400 border-rose-900/50' },
-                        { name: 'Raw LUA 5.0 IDE', ver: 'v2.1', color: 'text-yellow-400 border-yellow-900/50' },
+                        { name: 'Raw LUA 5.0 IDE', ver: 'v2.2', color: 'text-yellow-400 border-yellow-900/50' },
+                        { name: 'Mod Integrity Validator', ver: 'v1.0', color: 'text-amber-400 border-amber-900/50' },
                       ].map((m, idx) => (
                         <div
                           key={idx}
@@ -481,15 +485,19 @@ export default function InstallerHudModal({ isOpen, onClose }: InstallerHudModal
    la comunidad de Star Wars: Empire at War y Forces of Corruption (Alamo Engine).
 
 2. HERRAMIENTAS INCLUIDAS EN ESTA DISTRIBUCIÓN (v${packageJson.version})
-   • Editor de Galaxia, Planetas y Rutas Comerciales (v2.5)
-   • Editor de Conquista Galáctica - Campaigns.xml (v3.1)
-   • Editor de Eventos de Historia - Story_*.xml (v2.1)
-   • Editor de Balance de Unidades - Space/Ground (v1.1)
-   • Compilador Binario de Traducciones .DAT UTF-16LE (v1.2)
-   • Gestor de Atlas Mega-Texturas .MTD + UV (v1.2)
+   • Editor de Galaxia, Planetas y Simulador Pathfinding A* (v2.6)
+   • Editor de Conquista Galáctica + Economía por Facción (v3.2)
+   • Editor de Eventos de Historia con Grafo Nodal 2D - Story_*.xml (v2.2)
+   • Editor de Unidades + Simulador Duelo TTK 1v1 Versus (v1.4)
+   • Editor de HardPoints, Conos de Disparo y Proyectiles XML + TTK (v1.1)
+   • Arquitecto de Árbol Tecnológico y Facciones XML (v1.0)
+   • Estudio de Audio y Efectos SFXEvents.xml (v1.0)
+   • Compilador Binario de Traducciones .DAT UTF-16LE (v1.3)
+   • Gestor de Atlas Mega-Texturas .MTD + UV (v1.3)
    • Editor de Diálogos y Simulador de Holo-Terminal .TXT (v1.1)
    • Editor de Código XML DOM (v2.1)
-   • Entorno de Desarrollo LUA 5.0 con Auditor Semántico (v2.1)
+   • Entorno de Desarrollo LUA 5.0 con Auditor Semántico (v2.2)
+   • Auditor Global de Integridad del Mod (v1.0)
 
 3. LIBERTAD DE CREACIÓN
    Todos los archivos XML, LUA, DAT, MTD y TXT generados o modificados con

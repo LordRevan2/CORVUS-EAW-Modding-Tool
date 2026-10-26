@@ -2,7 +2,8 @@ import sharp from 'sharp';
 import fs from 'fs';
 
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-const VERSION = pkg.version || '3.1.0';
+const VERSION = pkg.version || '4.0.0-beta';
+const CODENAME = 'REVAN';
 
 /**
  * Convierte un buffer RGB crudo (width x height x 3 bytes) en un archivo Windows BMP de 24 bits sin comprimir,
@@ -122,10 +123,10 @@ async function generateAssets() {
         <stop offset="65%" stop-color="#06b6d4" stop-opacity="0.12" />
         <stop offset="100%" stop-color="#020617" stop-opacity="0" />
       </radialGradient>
-      <linearGradient id="silverBadge" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="#e2e8f0" />
-        <stop offset="50%" stop-color="#cbd5e1" />
-        <stop offset="100%" stop-color="#94a3b8" />
+      <linearGradient id="revanPurpleBadge" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#3b0764" />
+        <stop offset="50%" stop-color="#6b21a8" />
+        <stop offset="100%" stop-color="#2e1065" />
       </linearGradient>
     </defs>
 
@@ -187,9 +188,9 @@ async function generateAssets() {
     <text x="82" y="132" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Arial, sans-serif" font-weight="900" font-size="17" font-style="italic" letter-spacing="3.5">CORVUS</text>
     <text x="82" y="145" text-anchor="middle" fill="#22d3ee" font-family="Consolas, monospace" font-weight="700" font-size="7.8" letter-spacing="1.1">// EAW MODDING TOOL</text>
 
-    <!-- Badge Plateado con Borde Dorado (v3.1.0) -->
-    <rect x="52" y="153" width="60" height="15" rx="2.5" fill="url(#silverBadge)" stroke="#fbbf24" stroke-width="1.4" />
-    <text x="82" y="163.5" text-anchor="middle" fill="#020617" font-family="Consolas, monospace" font-weight="900" font-size="8.5" letter-spacing="1">v${VERSION}</text>
+    <!-- Badge Morado con Borde Dorado (v4.0.0-beta // REVAN) -->
+    <rect x="18" y="152" width="128" height="16" rx="2.5" fill="url(#revanPurpleBadge)" stroke="#fbbf24" stroke-width="1.4" />
+    <text x="82" y="163" text-anchor="middle" fill="#f3e8ff" font-family="Consolas, monospace" font-weight="900" font-size="7.4" letter-spacing="0.6">v${VERSION} <tspan fill="#fde047">// ${CODENAME}</tspan></text>
 
     <!-- Separador Ámbar / Cyan -->
     <line x1="22" y1="178" x2="142" y2="178" stroke="#0e7490" stroke-width="1" />
@@ -198,12 +199,12 @@ async function generateAssets() {
     <!-- Panel de Módulos Incluidos estilo Tarjetas UI -->
     <rect x="14" y="186" width="136" height="86" rx="2" fill="#091326" stroke="#1e293b" stroke-width="1" />
     <g font-family="Consolas, monospace" font-size="7" fill="#cbd5e1">
-      <text x="21" y="200" fill="#22d3ee" font-weight="700">▸ GALAXY &amp; PLANETS v2.5</text>
-      <text x="21" y="213" fill="#34d399" font-weight="700">▸ GALACTIC CONQUEST v3.1</text>
-      <text x="21" y="226" fill="#34d399">▸ STORY &amp; UNITS BALANCER</text>
-      <text x="21" y="239" fill="#c084fc">▸ .DAT / .MTD / .TXT HUD</text>
-      <text x="21" y="252" fill="#facc15">▸ RAW XML &amp; LUA 5.0 IDE</text>
-      <text x="21" y="265" fill="#94a3b8">▸ AUTO-UPDATER // EN-ES-FR</text>
+      <text x="21" y="200" fill="#22d3ee" font-weight="700">▸ GALAXY v2.7 &amp; GC v3.3</text>
+      <text x="21" y="213" fill="#34d399" font-weight="700">▸ STORY v2.2 &amp; TECH v1.0</text>
+      <text x="21" y="226" fill="#fb7185" font-weight="700">▸ UNITS v1.4 &amp; HP v1.1</text>
+      <text x="21" y="239" fill="#c084fc">▸ .DAT v1.3 / SFX v1.0</text>
+      <text x="21" y="252" fill="#facc15">▸ XML v2.1 &amp; LUA 5.0 v2.2</text>
+      <text x="21" y="265" fill="#94a3b8">▸ MOD VALIDATOR v1.0 // HUD</text>
     </g>
 
     <!-- Badge de sistema inferior -->
@@ -230,9 +231,10 @@ async function generateAssets() {
         <stop offset="70%" stop-color="#091e36" />
         <stop offset="100%" stop-color="#020617" />
       </linearGradient>
-      <linearGradient id="hdSilver" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="#e2e8f0" />
-        <stop offset="100%" stop-color="#94a3b8" />
+      <linearGradient id="hdRevanPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#3b0764" />
+        <stop offset="50%" stop-color="#6b21a8" />
+        <stop offset="100%" stop-color="#2e1065" />
       </linearGradient>
     </defs>
     <rect width="150" height="57" fill="url(#hdBg)" />
@@ -245,12 +247,11 @@ async function generateAssets() {
     <line x1="0" y1="55" x2="150" y2="55" stroke="#06b6d4" stroke-width="2" />
     <line x1="0" y1="52" x2="98" y2="52" stroke="#fbbf24" stroke-width="1" opacity="0.85" />
 
-    <!-- Texto táctico + Badge Plateado/Dorado -->
-    <text x="8" y="21" fill="#f8fafc" font-family="Segoe UI, Arial, sans-serif" font-weight="900" font-size="12" font-style="italic" letter-spacing="2">CORVUS</text>
-    <rect x="65" y="11" width="34" height="12" rx="2" fill="url(#hdSilver)" stroke="#fbbf24" stroke-width="1" />
-    <text x="82" y="19.5" text-anchor="middle" fill="#020617" font-family="Consolas, monospace" font-weight="900" font-size="6.8">v${VERSION}</text>
-    <text x="8" y="34" fill="#22d3ee" font-family="Consolas, monospace" font-weight="700" font-size="7" letter-spacing="0.8">// EAW MODDING SUITE</text>
-    <text x="8" y="45" fill="#94a3b8" font-family="Consolas, monospace" font-size="6" letter-spacing="0.6">SYS.INSTALLER // READY</text>
+    <!-- Texto táctico + Badge Morado/Dorado (Revan) -->
+    <text x="7" y="19" fill="#f8fafc" font-family="Segoe UI, Arial, sans-serif" font-weight="900" font-size="11" font-style="italic" letter-spacing="1.6">CORVUS</text>
+    <rect x="7" y="23" width="95" height="12" rx="2" fill="url(#hdRevanPurple)" stroke="#fbbf24" stroke-width="1" />
+    <text x="54.5" y="31.2" text-anchor="middle" fill="#f3e8ff" font-family="Consolas, monospace" font-weight="900" font-size="5.8">v${VERSION} <tspan fill="#fde047">// ${CODENAME}</tspan></text>
+    <text x="7" y="45" fill="#22d3ee" font-family="Consolas, monospace" font-weight="700" font-size="6.2" letter-spacing="0.6">EAW MODDING // READY</text>
 
     <!-- Icono Oficial de la UI a la derecha -->
     <rect x="108" y="11" width="32" height="32" rx="3.5" fill="#06b6d4" />
@@ -277,6 +278,92 @@ async function generateAssets() {
   fs.writeFileSync('public/installerHeader.bmp', headerBmp);
   await sharp(Buffer.from(headerSvg)).resize(150, 57).png().toFile('public/installerHeader.png');
   console.log('✔ public/installerHeader.bmp (.png) generado (150x57 24-bit BMP)');
+
+  // 5. Asegurar carpeta build/ y generar build/installer.nsh + build/LICENSE.txt
+  if (!fs.existsSync('build')) {
+    fs.mkdirSync('build', { recursive: true });
+  }
+
+  const nshContent = `; ============================================================================
+; CORVUS // EAW MODDING TOOL - CUSTOM DARK TACTICAL HUD NSIS SCRIPT (v${VERSION})
+; ============================================================================
+
+!macro customHeader
+  !ifdef MUI_BGCOLOR
+    !undef MUI_BGCOLOR
+  !endif
+  !define MUI_BGCOLOR "020617"
+
+  !ifdef MUI_TEXTCOLOR
+    !undef MUI_TEXTCOLOR
+  !endif
+  !define MUI_TEXTCOLOR "E2E8F0"
+
+  !ifdef MUI_LICENSEPAGE_BGCOLOR
+    !undef MUI_LICENSEPAGE_BGCOLOR
+  !endif
+  !define MUI_LICENSEPAGE_BGCOLOR "0F172A"
+
+  BrandingText "CORVUS // GALACTIC ENGINE v${VERSION} (${CODENAME}) - TACTICAL SETUP"
+!macroend
+
+!macro customInstall
+  WriteRegStr SHCTX "Software\\CORVUS\\ModdingTool" "Version" "${VERSION}"
+  WriteRegStr SHCTX "Software\\CORVUS\\ModdingTool" "Codename" "${CODENAME}"
+  WriteRegStr SHCTX "Software\\CORVUS\\ModdingTool" "Engine" "Alamo-EAW-FoC"
+  WriteRegStr SHCTX "Software\\CORVUS\\ModdingTool" "Theme" "Tactical-HUD-Dark"
+!macroend
+
+!macro customUnInstall
+  DeleteRegKey SHCTX "Software\\CORVUS"
+!macroend
+`;
+  fs.writeFileSync('build/installer.nsh', nshContent, 'utf8');
+  console.log('✔ build/installer.nsh generado');
+
+  const licenseContent = `\uFEFF================================================================================
+   CORVUS // STAR WARS: EMPIRE AT WAR TACTICAL MODDING SUITE (v${VERSION} // ${CODENAME})
+   PROTOCOLO DE LICENCIA Y USO PARA MODDERS // LICENSE & USAGE AGREEMENT
+================================================================================
+
+1. PROPÓSITO DE LA SUITE // SUITE PURPOSE
+   CORVUS es una estación de trabajo e ingeniería de modding desarrollada para
+   la comunidad de Star Wars: Empire at War y Forces of Corruption (Alamo Engine).
+
+   CORVUS is a tactical modding workstation and engineering suite built for the
+   Star Wars: Empire at War and Forces of Corruption modding community.
+
+2. HERRAMIENTAS INCLUIDAS // INCLUDED WORKSTATION MODULES (v${VERSION} // ${CODENAME})
+   * Editor de Galaxia, Planetas, Undo/Redo y Pathfinding A* (v2.7)
+   * Editor de Conquista Galáctica, Undo/Redo y Economía por Facción (v3.3)
+   * Editor de Eventos de Historia con Grafo Nodal 2D - Story_*.xml (v2.2)
+   * Editor de Unidades + Simulador Duelo TTK 1v1 Versus (v1.4)
+   * Editor de HardPoints, Conos de Disparo y Proyectiles XML + TTK (v1.1)
+   * Arquitecto de Árbol Tecnológico y Facciones XML (v1.0)
+   * Estudio de Audio y Efectos SFXEvents.xml (v1.0)
+   * Compilador Binario de Traducciones .DAT UTF-16LE (v1.3)
+   * Gestor de Atlas Mega-Texturas .MTD + UV (v1.3)
+   * Editor de Diálogos y Simulador de Holo-Terminal .TXT (v1.1)
+   * Editor de Código XML DOM (v2.1)
+   * Entorno de Desarrollo LUA 5.0 con Auditor Semántico (v2.2)
+   * Auditor Global de Integridad del Mod (v1.0)
+
+3. LIBERTAD DE CREACIÓN // MODDER OWNERSHIP
+   Todos los archivos XML, LUA, DAT, MTD y TXT generados o modificados con
+   CORVUS pertenecen íntegramente al autor del mod. Sin restricciones de uso
+   ni distribución en Steam Workshop, ModDB o repositorios comunitarios.
+
+4. GARANTÍA Y RESPALDO // DISCLAIMER
+   Este software se proporciona "TAL CUAL" ("AS IS"), sin garantías expresas o
+   implícitas. Se recomienda mantener copias de seguridad (backups) de los
+   archivos originales del juego antes de compilar cambios masivos.
+
+================================================================================
+   CORVUS GALACTIC ENGINE // PETROGLYPH ALAMO ENGINE MODDING WORKSTATION
+================================================================================
+`;
+  fs.writeFileSync('build/LICENSE.txt', licenseContent, 'utf8');
+  console.log('✔ build/LICENSE.txt generado');
 }
 
 generateAssets().catch(console.error);

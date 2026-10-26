@@ -1,0 +1,36 @@
+================================================================================
+   CORVUS // STAR WARS: EMPIRE AT WAR TACTICAL MODDING SUITE (v3.1.3)
+   PROTOCOLO DE LICENCIA Y USO PARA MODDERS // LICENSE & USAGE AGREEMENT
+================================================================================
+
+1. PROPÓSITO DE LA SUITE // SUITE PURPOSE
+   CORVUS es una estación de trabajo e ingeniería de modding desarrollada para
+   la comunidad de Star Wars: Empire at War y Forces of Corruption (Alamo Engine).
+
+   CORVUS is a tactical modding workstation and engineering suite built for the
+   Star Wars: Empire at War and Forces of Corruption modding community.
+
+2. HERRAMIENTAS INCLUIDAS // INCLUDED WORKSTATION MODULES (v3.1.3)
+   * Editor de Galaxia, Planetas y Rutas Comerciales (v2.5)
+   * Editor de Conquista Galáctica - Campaigns.xml (v3.1)
+   * Editor de Eventos de Historia - Story_*.xml (v2.1)
+   * Editor de Balance de Unidades - Space/Ground (v1.1)
+   * Compilador Binario de Traducciones .DAT UTF-16LE (v1.2)
+   * Gestor de Atlas Mega-Texturas .MTD + UV (v1.2)
+   * Editor de Diálogos y Simulador de Holo-Terminal .TXT (v1.1)
+   * Editor de Código XML DOM (v2.1)
+   * Entorno de Desarrollo LUA 5.0 con Auditor Semántico (v2.1)
+
+3. LIBERTAD DE CREACIÓN // MODDER OWNERSHIP
+   Todos los archivos XML, LUA, DAT, MTD y TXT generados o modificados con
+   CORVUS pertenecen íntegramente al autor del mod. Sin restricciones de uso
+   ni distribución en Steam Workshop, ModDB o repositorios comunitarios.
+
+4. GARANTÍA Y RESPALDO // DISCLAIMER
+   Este software se proporciona "TAL CUAL" ("AS IS"), sin garantías expresas o
+   implícitas. Se recomienda mantener copias de seguridad (backups) de los
+   archivos originales del juego antes de compilar cambios masivos.
+
+================================================================================
+   CORVUS GALACTIC ENGINE // PETROGLYPH ALAMO ENGINE MODDING WORKSTATION
+================================================================================

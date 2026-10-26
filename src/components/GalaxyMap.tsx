@@ -29,7 +29,7 @@ interface GalaxyMapProps {
   settings: AppSettings;
   selectedPlanet: Planet | null;
   onSelectPlanet: (p: Planet) => void;
-  onUpdatePlanet: (p: Planet) => void;
+  onUpdatePlanet: (p: Planet, nodeUpdates?: { tagName: string; value: string }[], actionMeta?: { label: string; coalesceKey?: string }) => void;
   initialBgUrl?: string | null;
   workspaceFiles?: File[];
   onAddPlanet?: () => void;
@@ -41,6 +41,7 @@ interface GalaxyMapProps {
   mapClickTogglesCampaignPlanet?: boolean;
   onToggleCampaignPlanet?: (planetName: string) => void;
   onToggleMapClickMode?: (enabled: boolean) => void;
+  onQuickCreateRoute?: (pointA: string, pointB: string) => void;
 }
 
 export default function GalaxyMap({ 
@@ -60,12 +61,14 @@ export default function GalaxyMap({
   onToggleHideExcluded,
   mapClickTogglesCampaignPlanet = false,
   onToggleCampaignPlanet,
-  onToggleMapClickMode
+  onToggleMapClickMode,
+  onQuickCreateRoute
 }: GalaxyMapProps) {
   const t = useTranslation();
   const lang = useLanguage();
   const svgRef = useRef<SVGSVGElement>(null);
   const [draggedPlanet, setDraggedPlanet] = useState<Planet | null>(null);
+  const dragSessionRef = useRef<number>(0);
   
   const [baseBounds, setBaseBounds] = useState<{
     vbMinX: number; vbMinY: number; vbWidth: number; vbHeight: number; planetRadius: number;
@@ -110,6 +113,11 @@ export default function GalaxyMap({
   const [showPrecisionRuler, setShowPrecisionRuler] = useState<boolean>(true); // Distance/angle vector from selected planet
   const [showAlignmentGuides, setShowAlignmentGuides] = useState<boolean>(false); // X/Y laser crosshairs for exact alignment
   const [cursorCoords, setCursorCoords] = useState<{ x: number; y: number; svgX: number; svgY: number } | null>(null);
+
+  // Hyperspace Pathfinding Simulator (A*) states (v2.6)
+  const [isPathfinderOpen, setIsPathfinderOpen] = useState<boolean>(false);
+  const [pathOrigin, setPathOrigin] = useState<string>('');
+  const [pathDest, setPathDest] = useState<string>('');
 
   // Apply unified preset for precision placement
   const applyScalePreset = (preset: 'micro' | 'fine' | 'standard' | 'macro') => {
@@ -241,6 +249,127 @@ export default function GalaxyMap({
     return map;
   }, [planets]);
 
+  // Hyperspace A* Pathfinding & Topology Graph (v2.6)
+  const pathfindingResult = useMemo(() => {
+    const nonCore = planets.filter(p => p.name.toLowerCase() !== 'galaxy_core_art_model');
+    const adj = new Map<string, { neighbor: string; routeId: string; dist: number }[]>();
+    nonCore.forEach(p => adj.set(p.name.toUpperCase(), []));
+
+    const activeRouteSet = activeCampaign && isCampaignPreview
+      ? new Set(activeCampaign.tradeRoutes.map(r => r.toLowerCase()))
+      : null;
+
+    tradeRoutes.forEach(tr => {
+      if (activeRouteSet && !activeRouteSet.has(tr.name.toLowerCase())) return;
+      const pA = planetMap.get(tr.pointA.toUpperCase());
+      const pB = planetMap.get(tr.pointB.toUpperCase());
+      if (!pA || !pB) return;
+      const dist = Math.hypot(pB.x - pA.x, pB.y - pA.y);
+      const uA = pA.name.toUpperCase();
+      const uB = pB.name.toUpperCase();
+      if (!adj.has(uA)) adj.set(uA, []);
+      if (!adj.has(uB)) adj.set(uB, []);
+      adj.get(uA)!.push({ neighbor: uB, routeId: tr.id, dist });
+      adj.get(uB)!.push({ neighbor: uA, routeId: tr.id, dist });
+    });
+
+    const isolatedPlanets = nonCore.filter(p => {
+      if (activeCampaign && isCampaignPreview) {
+        const inCamp = activeCampaign.locations.some(l => l.toLowerCase() === p.name.toLowerCase());
+        if (!inCamp) return false;
+      }
+      return (adj.get(p.name.toUpperCase())?.length || 0) === 0;
+    });
+
+    // Nearest neighbor recommendation for selectedPlanet
+    let nearestCandidate: { planet: Planet; dist: number } | null = null;
+    if (selectedPlanet && selectedPlanet.name.toLowerCase() !== 'galaxy_core_art_model') {
+      const selUpper = selectedPlanet.name.toUpperCase();
+      const existingNeighbors = new Set((adj.get(selUpper) || []).map(n => n.neighbor));
+      let bestDist = Infinity;
+      for (const cand of nonCore) {
+        if (cand.id === selectedPlanet.id) continue;
+        if (existingNeighbors.has(cand.name.toUpperCase())) continue;
+        const d = Math.hypot(cand.x - selectedPlanet.x, cand.y - selectedPlanet.y);
+        if (d < bestDist) {
+          bestDist = d;
+          nearestCandidate = { planet: cand, dist: d };
+        }
+      }
+    }
+
+    const startKey = pathOrigin.trim().toUpperCase();
+    const endKey = pathDest.trim().toUpperCase();
+    if (!startKey || !endKey || startKey === endKey || !planetMap.has(startKey) || !planetMap.has(endKey)) {
+      return {
+        routeIds: new Set<string>(),
+        planetChain: [] as string[],
+        totalDistance: 0,
+        reachable: false,
+        isolatedPlanets,
+        nearestCandidate
+      };
+    }
+
+    // Dijkstra / A* shortest path
+    const distMap = new Map<string, number>();
+    const prevPlanet = new Map<string, { from: string; routeId: string }>();
+    const visited = new Set<string>();
+    nonCore.forEach(p => distMap.set(p.name.toUpperCase(), Infinity));
+    distMap.set(startKey, 0);
+
+    const queue: string[] = [startKey];
+    while (queue.length > 0) {
+      queue.sort((a, b) => (distMap.get(a) || Infinity) - (distMap.get(b) || Infinity));
+      const curr = queue.shift()!;
+      if (curr === endKey) break;
+      if (visited.has(curr)) continue;
+      visited.add(curr);
+
+      const edges = adj.get(curr) || [];
+      for (const edge of edges) {
+        const alt = (distMap.get(curr) || 0) + edge.dist;
+        if (alt < (distMap.get(edge.neighbor) ?? Infinity)) {
+          distMap.set(edge.neighbor, alt);
+          prevPlanet.set(edge.neighbor, { from: curr, routeId: edge.routeId });
+          queue.push(edge.neighbor);
+        }
+      }
+    }
+
+    if (!prevPlanet.has(endKey)) {
+      return {
+        routeIds: new Set<string>(),
+        planetChain: [] as string[],
+        totalDistance: 0,
+        reachable: false,
+        isolatedPlanets,
+        nearestCandidate
+      };
+    }
+
+    const routeIds = new Set<string>();
+    const chain: string[] = [];
+    let step: string | undefined = endKey;
+    while (step) {
+      const pObj = planetMap.get(step);
+      chain.unshift(pObj ? pObj.name : step);
+      const prev = prevPlanet.get(step);
+      if (!prev) break;
+      routeIds.add(prev.routeId);
+      step = prev.from;
+    }
+
+    return {
+      routeIds,
+      planetChain: chain,
+      totalDistance: distMap.get(endKey) || 0,
+      reachable: true,
+      isolatedPlanets,
+      nearestCandidate
+    };
+  }, [planets, tradeRoutes, planetMap, pathOrigin, pathDest, activeCampaign, isCampaignPreview, selectedPlanet]);
+
   const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -292,6 +421,7 @@ export default function GalaxyMap({
       onToggleCampaignPlanet(planet.name);
       return;
     }
+    dragSessionRef.current += 1;
     setDraggedPlanet(planet);
     (e.target as Element).setPointerCapture(e.pointerId);
   };
@@ -333,7 +463,10 @@ export default function GalaxyMap({
 
         const updated = { ...draggedPlanet, x: newX, y: newY };
         setDraggedPlanet(updated);
-        onUpdatePlanet(updated);
+        onUpdatePlanet(updated, undefined, {
+          label: `${tr(lang, 'Move', 'Mover', 'Déplacer')} ${updated.name} (${updated.x}, ${updated.y})`,
+          coalesceKey: `drag_planet_${updated.id}_${dragSessionRef.current}`
+        });
         return;
       }
     }
@@ -504,7 +637,7 @@ export default function GalaxyMap({
         <div className="absolute top-4 left-4 pointer-events-none opacity-90 font-mono text-[10px] text-cyan-400 z-10 uppercase tracking-widest leading-relaxed bg-slate-950/80 border border-cyan-900/50 px-3 py-2 rounded-sm backdrop-blur-sm shadow-lg">
           <div className="font-bold text-cyan-300 flex items-center gap-2">
             <Compass className="w-3.5 h-3.5 text-cyan-400" />
-            <span>GALAXY MAP // V2.5</span>
+            <span>GALAXY MAP // V2.7</span>
           </div>
           <div className="text-[9px] text-slate-400 mt-0.5 flex items-center gap-2">
             <span>{planets.length} {tr(lang, 'planets', 'planetas', 'planètes')}</span>
@@ -938,6 +1071,18 @@ export default function GalaxyMap({
                   strokeLinecap="round"
                   opacity={isDimmedByPreview ? 0.14 : isConnectedToSelected ? 0.98 : 0.88}
                 />
+                {pathfindingResult.routeIds.has(tr.id) && (
+                  <line
+                    x1={planetA.x}
+                    y1={ay}
+                    x2={planetB.x}
+                    y2={by}
+                    stroke="#22d3ee"
+                    strokeWidth={effectiveRouteStroke * 2.4}
+                    strokeLinecap="round"
+                    className="pointer-events-none"
+                  />
+                )}
               </g>
             );
           })}
@@ -1186,6 +1331,7 @@ export default function GalaxyMap({
             onClick={() => {
               setIsBgSettingsOpen(prev => !prev);
               setIsScaleSettingsOpen(false);
+              setIsPathfinderOpen(false);
             }}
             className={`w-8 h-8 flex items-center justify-center transition-colors rounded-sm cursor-pointer ${
               bgImage ? 'text-amber-400 bg-amber-950/40 border border-amber-600/50' : 'text-cyan-400 hover:bg-cyan-500/20'
@@ -1193,6 +1339,24 @@ export default function GalaxyMap({
             title={lang === 'es' ? 'Configurar Fondo Galáctico' : 'Galaxy Background Settings'}
           >
             <ImageIcon className="w-4 h-4" />
+          </button>
+
+          {/* Hyperspace Pathfinding Simulator (A*) Button (v2.6) */}
+          <button
+            onClick={() => {
+              setIsPathfinderOpen(prev => !prev);
+              setIsScaleSettingsOpen(false);
+              setIsBgSettingsOpen(false);
+            }}
+            className={`px-2.5 h-8 flex items-center gap-1.5 transition-colors rounded-sm cursor-pointer font-mono text-[10px] font-bold uppercase tracking-wider ${
+              isPathfinderOpen || pathfindingResult.reachable
+                ? 'text-cyan-300 bg-cyan-950/80 border border-cyan-500/60'
+                : 'text-cyan-400 hover:bg-cyan-500/20'
+            }`}
+            title={tr(lang, 'Hyperspace Pathfinding Simulator (A*)', 'Simulador de Ruta Hiperespacial (A*)', 'Simulateur de Route Hyperspatiale (A*)')}
+          >
+            <Compass className="w-3.5 h-3.5" />
+            <span>Path A*</span>
           </button>
 
           {/* Hidden File Input supporting TGA, PNG, JPG, WebP */}
@@ -1630,6 +1794,154 @@ export default function GalaxyMap({
       )}
 
       {/* ========================================================= */}
+      {/* HYPERSPACE PATHFINDING SIMULATOR (A*) POPUP (v2.6)         */}
+      {/* ========================================================= */}
+      {isPathfinderOpen && (
+        <div className="absolute bottom-26 left-4 bg-slate-900/95 border border-cyan-700/80 shadow-2xl rounded-sm p-4 w-84 z-30 font-mono text-cyan-100 flex flex-col gap-3 backdrop-blur-md">
+          <div className="flex items-center justify-between border-b border-cyan-800/50 pb-2">
+            <span className="text-[10px] tracking-widest uppercase font-bold text-cyan-300 flex items-center gap-1.5">
+              <Compass className="w-3.5 h-3.5 text-cyan-400" />
+              {tr(lang, 'Hyperspace Pathfinding (A*)', 'Navegación Hiperespacial (A*)', 'Navigation Hyperspatiale (A*)')}
+            </span>
+            <button
+              onClick={() => setIsPathfinderOpen(false)}
+              className="text-slate-400 hover:text-white text-xs cursor-pointer px-1"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="space-y-2 text-[10px]">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="uppercase text-slate-400">
+                  {tr(lang, 'Origin Planet', 'Planeta Origen', 'Planète Origine')}
+                </label>
+                {selectedPlanet && (
+                  <button
+                    onClick={() => setPathOrigin(selectedPlanet.name)}
+                    className="text-[9px] text-cyan-300 hover:underline cursor-pointer"
+                  >
+                    {tr(lang, `Use ${selectedPlanet.name}`, `Usar ${selectedPlanet.name}`, `Utiliser ${selectedPlanet.name}`)}
+                  </button>
+                )}
+              </div>
+              <select
+                value={pathOrigin}
+                onChange={(e) => setPathOrigin(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 px-2 py-1 text-xs text-cyan-200 rounded-sm outline-none"
+              >
+                <option value="">{tr(lang, '-- Select Origin --', '-- Seleccionar Origen --', '-- Choisir Origine --')}</option>
+                {planets
+                  .filter(p => p.name.toLowerCase() !== 'galaxy_core_art_model')
+                  .map(p => (
+                    <option key={p.id} value={p.name}>{p.name}</option>
+                  ))}
+              </select>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="uppercase text-slate-400">
+                  {tr(lang, 'Destination Planet', 'Planeta Destino', 'Planète Destination')}
+                </label>
+                {selectedPlanet && (
+                  <button
+                    onClick={() => setPathDest(selectedPlanet.name)}
+                    className="text-[9px] text-amber-300 hover:underline cursor-pointer"
+                  >
+                    {tr(lang, `Use ${selectedPlanet.name}`, `Usar ${selectedPlanet.name}`, `Utiliser ${selectedPlanet.name}`)}
+                  </button>
+                )}
+              </div>
+              <select
+                value={pathDest}
+                onChange={(e) => setPathDest(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 px-2 py-1 text-xs text-amber-200 rounded-sm outline-none"
+              >
+                <option value="">{tr(lang, '-- Select Destination --', '-- Seleccionar Destino --', '-- Choisir Destination --')}</option>
+                {planets
+                  .filter(p => p.name.toLowerCase() !== 'galaxy_core_art_model')
+                  .map(p => (
+                    <option key={p.id} value={p.name}>{p.name}</option>
+                  ))}
+              </select>
+            </div>
+          </div>
+
+          {pathOrigin && pathDest && pathOrigin !== pathDest && (
+            <div className="bg-slate-950 border border-slate-800 p-2.5 rounded-sm space-y-1.5 text-[10px]">
+              {pathfindingResult.reachable ? (
+                <>
+                  <div className="flex items-center justify-between text-emerald-400 font-bold">
+                    <span>{pathfindingResult.planetChain.length - 1} {tr(lang, 'Hops', 'Saltos', 'Sauts')}</span>
+                    <span className="tabular-nums">{pathfindingResult.totalDistance.toFixed(1)} u</span>
+                  </div>
+                  <div className="text-slate-300 text-[9px] leading-relaxed">
+                    {pathfindingResult.planetChain.join(' → ')}
+                  </div>
+                </>
+              ) : (
+                <div className="text-rose-400 font-bold">
+                  {tr(
+                    lang,
+                    'No connected trade route path between these planets.',
+                    'No existe ruta hiperespacial conectada entre ambos planetas.',
+                    'Aucune route connectée entre ces planètes.'
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Nearest Neighbor Quick Route Generator */}
+          {selectedPlanet && pathfindingResult.nearestCandidate && onQuickCreateRoute && (
+            <div className="pt-2 border-t border-slate-800 space-y-1.5">
+              <span className="text-[9px] text-slate-400 uppercase block">
+                {tr(lang, 'Auto-Route Suggestion (Nearest)', 'Sugerencia de Ruta Más Cercana', 'Suggestion de Route Proche')}
+              </span>
+              <button
+                onClick={() => onQuickCreateRoute(selectedPlanet.name, pathfindingResult.nearestCandidate!.planet.name)}
+                className="w-full py-1.5 px-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 text-[10px] font-bold rounded-sm cursor-pointer flex items-center justify-between"
+              >
+                <span className="truncate">
+                  {selectedPlanet.name} ↔ {pathfindingResult.nearestCandidate.planet.name}
+                </span>
+                <span className="tabular-nums text-[9px] shrink-0">
+                  {pathfindingResult.nearestCandidate.dist.toFixed(0)}u
+                </span>
+              </button>
+            </div>
+          )}
+
+          {/* Isolated Planets Alert */}
+          <div className="pt-2 border-t border-slate-800">
+            <div className="flex items-center justify-between text-[9px] mb-1">
+              <span className="uppercase text-slate-400">
+                {tr(lang, 'Isolated Planets (0 Routes)', 'Planetas Aislados (0 Rutas)', 'Planètes Isolées (0 Routes)')}
+              </span>
+              <span className={pathfindingResult.isolatedPlanets.length > 0 ? 'text-amber-400 font-bold' : 'text-emerald-400 font-bold'}>
+                {pathfindingResult.isolatedPlanets.length}
+              </span>
+            </div>
+            {pathfindingResult.isolatedPlanets.length > 0 && (
+              <div className="max-h-20 overflow-y-auto flex flex-wrap gap-1">
+                {pathfindingResult.isolatedPlanets.slice(0, 12).map(ip => (
+                  <button
+                    key={ip.id}
+                    onClick={() => onSelectPlanet(ip)}
+                    className="px-1.5 py-0.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[9px] text-amber-300 rounded-sm cursor-pointer"
+                  >
+                    {ip.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
       {/* STATUS BAR FOOTER                                         */}
       {/* ========================================================= */}
       <div className="h-10 bg-slate-900/90 border-t border-cyan-800/50 px-6 flex items-center justify-between text-[10px] font-mono text-cyan-400/80 uppercase tracking-widest z-10 shrink-0 backdrop-blur-md">
@@ -1655,7 +1967,7 @@ export default function GalaxyMap({
             ZOOM: <strong className="text-cyan-200">{Math.round(transform.zoom * 100)}%</strong>
           </span>
           <div className="flex items-center gap-1.5">
-            <span className="text-cyan-500/70 text-[9px] font-bold">ONLINE // V2.5</span>
+            <span className="text-cyan-500/70 text-[9px] font-bold">ONLINE // V2.7</span>
             <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_8px_#22d3ee]"></div>
           </div>
         </div>

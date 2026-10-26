@@ -1,92 +1,46 @@
-# CORVUS // EAW Modding Tool
-## User Manual
+# CORVUS // EAW Modding Tool (v4.0.0-beta // REVAN)
+## User Manual & Tactical Workstation Reference
 
-Welcome to **CORVUS**, your ultimate tool for designing and modifying galactic maps for the *Star Wars: Empire at War* video game.
-
----
-
-## 1. Introduction
-CORVUS allows you to create, edit, and visualize the game's galactic map interactively and visually. With this tool, you can:
-- Manage Planets (`Planets.xml`).
-- Manage Trade Routes / Hyperlanes (`TradeRoutes.xml`).
-
-All of this is done in an intuitive environment with real-time synchronization.
+Welcome to **CORVUS v4.0.0-beta // REVAN**, the comprehensive tactical modding workstation for *Star Wars: Empire at War* and *Forces of Corruption* (Alamo Engine).
 
 ---
 
-## 2. Getting Started (Importing Files)
+## Included Modules & Versions (v4.0.0-beta // REVAN)
 
-To start editing, you need to load the original XML files from your modification directory or the base game. You will find the import buttons on the top bar. The recommended import order is:
-
-1. **Import Planets.xml (Required)**: This file is required first to determine the positions, names, and characteristics of all planets.
-2. **Import TradeRoutes.xml**: This is where hyperspace connections between planets are defined. You will see them drawn between the imported planets.
-
----
-
-## 3. Planet Editor
-
-The left panel (**PLANETS** tab) displays all the worlds loaded on the map.
-- **Search Planet**: Use the search bar to filter the list quickly.
-- **Hide the Core**: You can use the `SHW/HD` button to hide or show the "Galaxy_Core_Art_Model" and clean up your view.
-- When selecting a planet from the list (or by clicking on it in the map), you will see its details in the right-hand panel **(Active Mode)**.
-
-### Editable Planet Properties
-- **Rebel/Empire/Pirate/Hutt**: Assign troops and visual bases for each faction according to your map layout.
-- **Position (X, Y)**: Control the planet's galactic coordinates by dragging the planet directly in the map viewport or introducing values manually in the editor with fine-tuned zooming.
+| Module | Version | Target Formats |
+| :--- | :---: | :--- |
+| **Galaxy, Planets & A* Pathfinding** | `v2.7` | `Planets.xml`, `TradeRoutes.xml` |
+| **Galactic Conquest & Faction Economy** | `v3.3` | `Campaigns.xml` |
+| **Story Campaign Event Plots + 2D Nodal Graph** | `v2.2` | `Story_*.xml` |
+| **Alamo Unit & 1v1 TTK Duel Simulator** | `v1.4` | `SpaceUnits*.xml`, `Ground*.xml`, `Squadrons.xml` |
+| **HardPoints & Projectiles XML + Target TTK** | `v1.1` | `HardPoints.xml`, `Projectiles.xml` |
+| **Tech Tree & Factions XML Architect** | `v1.0` | `Factions.xml`, `SpaceUnits*.xml`, `Ground*.xml` |
+| **Audio & SFXEvents.xml Studio** | `v1.0` | `SFXEvents.xml`, `.wav` |
+| **String Localization Compiler (.DAT)** | `v1.3` | `MasterTextFile_*.dat` |
+| **Mega-Texture Atlas Editor (.MTD)** | `v1.3` | `MT_CommandBar.mtd`, `.tga`, `.png` |
+| **Dialog, Briefings & Holo Simulator** | `v1.1` | `Dialog_*.txt` |
+| **Raw XML Code & DOM Editor** | `v2.1` | Generic `.xml` |
+| **Raw LUA 5.0 Script IDE** | `v2.2` | `.lua` (Alamo Lua 5.0) |
+| **Global Mod Integrity Validator** | `v1.0` | Cross-File `.XML` / `.DAT` / `.MTD` Audit |
 
 ---
 
-## 4. Route Editor (Hyperlanes)
+## What's New in CORVUS v3.3.0
 
-Navigate to the **ROUTES** tab (left panel).
-- You can add new routes by clicking on "NEW TRADE ROUTE" or modify/delete existing ones.
-- The route will visualize a connection between its **Planet A** and its **Planet B**.
-
----
-
-## 5. Game Translations (.DAT)
-
-In the initial home screen, you have access to the **CORVUS WORKSTATION** for translations. By selecting the **Game Translations (.DAT)** option, you can load and edit `MasterTextFile.dat` and other translation files.
-
-- **Import / Create**: Load an existing `.DAT` file or create a brand new one from scratch.
-- **Bulk Import**: Paste lists of keys and translations from Excel or Google Sheets (separated by Tab, `=`, or `;`) for quick, massive text additions.
-- **Search and Filters**: Easily locate translation keys, find empty values, or check for duplicates across the entire file.
-- **Editing**: Select a key to edit its localized text. A byte size and character count metric is included to ensure limits for large text descriptions are correctly formatted for the game engine. Let your text breathe by using paragraphs naturally with `\n` line breaks for proper in-game rendering.
-- **Exporting**: Once finished, download the compiled `.DAT` file via the `Save .DAT` button. Place it in `Data/Text/` or your mod's translation dictionary.
+1. **Tech Tree & Factions XML Architect (`v1.0`)**:
+   - Visual progression board (`Tech 0` through `Tech 5`) across all space and ground units per faction (`Empire`, `Rebel`, `Underworld`, or custom factions), with 1-click Tech Level promotion/demotion (`<Tech_Level>`) and Starbase/structure dependency badges (`<Required_Star_Base_Level>`, `<Required_Special_Structures>`).
+   - Full `Factions.xml` inspector for `<Faction>` nodes, including RGBA strategic color picker (`<Color>`), tactical space/land population caps (`<Space_Tactical_Unit_Cap>`), and starting structures.
+2. **Audio & `SFXEvents.xml` Studio (`v1.0`)**:
+   - Dedicated acoustic inspector for `<SFXEvent>` nodes (weapons, engines, explosions, UI, and unit voiceovers).
+   - Includes dynamic volume (`Min_Volume` / `Max_Volume`), pitch (`Min_Pitch` / `Max_Pitch`), 2D/3D spatialization & attenuation distances (`Min_Distance` / `Max_Distance`), `.WAV` sample pool manager, and a Web Audio API pitch/volume roll synthesizer to test randomized sound variations in real time.
+3. **Story Campaign Event Editor (`v2.2`)**:
+   - Added an interactive **2D Nodal Event Graph (DAG)** mode with automatic topological layering, zoom/pan viewport, and color-coded Bézier curves for `<Prereq>` prerequisites, `ENABLE_EVENT` unlocks, and `DISABLE_EVENT` locks.
+4. **Alamo Unit & Roster Editor (`v1.4`)**:
+   - Added a **1v1 Time-To-Kill (TTK) Combat Duel Simulator** inside the `Versus` view that computes sustained weapon DPS, shield regeneration, seconds to destroy Unit A vs Unit B, predicted duel winner, and remaining hull percentage, plus 1-click navigation from any unit `<HardPoints>` entry to the HardPoints Editor.
+5. **HardPoints & Projectiles XML Editor (`v1.1`)**:
+   - Added a live **Target Class TTK Simulator** (`Corvette`, `Frigate`, `Capital`, `Starbase`) inside the weapon telemetry panel comparing single turret (`1x`) vs 4-turret battery (`4x`) time-to-kill.
 
 ---
 
-## 6. Icon Atlas Mapping (.MTD)
-
-In the home screen tools panel, you also have access to the **MegaTexture Database Editor (.MTD)**. This serves to align User Interface icons dynamically using a shared sprite sheet atlas (such as `Mt_commandbar.tga` for ability icons).
-
-- **Load MTD & Texture**: Import your `Mt_commandbar.mtd` file. You should also load its corresponding texture atlas image (in `.PNG` or `.TGA`) to visualize the mapping over real graphics.
-- **Adjust Boundaries**: Select a specific UI icon from the sidebar. You will see its coverage highlighted on the texture atlas. Modify the `X, Y` (Top Left) and `Width, Height` dimensions.
-- **Expert UV Display**: EaW maps hardware UV constraints via floats (0.0 to 1.0). The editor calculates and displays these for you automatically inside the "Expert UV Coords" panel.
-- **Export**: After aligning the icon textures securely into their UV slots, hit **Save .MTD** to download the new binaries for your mod folder.
-
----
-
-## 7. General Map Options
-
-- **Invert Y Axis (Configuration)**: As a general rule, Star Wars: Empire at War and its engine invert the vertical axis compared to some modern 2D viewports. Go to `Settings` (the gear icon) to activate this option so you can map the planets correctly in the style of its galaxy map.
-- **Zoom / Viewport Panning**: You can use the mouse wheel or the Magnifying Glass (+ / -) buttons and selection mode to correctly pan over your galactic scenario. You can drag the map background to move smoothly.
-
----
-
-## 8. Saving and Exporting Changes
-
-Your modifications only remain in the browser memory temporarily until you export them to physically apply them to the mod's `/XML` folder.
-
-To save everything:
-1. Click the top button **EXPORT XML FILES**.
-2. **CORVUS** will automatically generate the new versions of the files: `Planets_Modified.xml` and `TradeRoutes_Modified.xml`. Only those files you imported and interacted with will be downloaded.
-3. Copy these files into your Mod's folder (e.g., `Data/XML/`), renaming them to remove the "_Modified" suffix to overwrite the originals.
-
-> *(We always recommend making backups of your initial files).*
-
----
-
-**CORVUS // EAW Modding Tool** _(Version 1.0.0)_
-Designed to take your RTS Modding projects to the next level interactively, quickly, and accurately.
+**CORVUS // EAW Modding Tool** _(Version 4.0.0-beta // REVAN)_
 May the Force be with you.

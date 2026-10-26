@@ -21,7 +21,11 @@ import {
   Eye,
   EyeOff,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  Undo2,
+  Redo2,
+  RotateCcw,
+  FileCode2
 } from 'lucide-react';
 import { useLanguage, tr } from '../i18n';
 import { DatRecord } from '../lib/dat';
@@ -32,7 +36,7 @@ interface CampaignEditorProps {
   tradeRoutes: TradeRoute[];
   selectedPlanet: Planet | null;
   onSelectPlanet: (p: Planet | null) => void;
-  onUpdateCampaign: (updated: Campaign) => void;
+  onUpdateCampaign: (updated: Campaign, actionMeta?: { label: string; coalesceKey?: string }) => void;
   onDeleteCampaign: () => void;
   mapClickTogglesPlanet: boolean;
   onToggleMapClickMode: (enabled: boolean) => void;
@@ -41,6 +45,12 @@ interface CampaignEditorProps {
   hideExcludedInPreview?: boolean;
   onToggleHideExcluded?: (hide: boolean) => void;
   datRecords?: DatRecord[] | null;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canRevertNode?: boolean;
+  onRevertNode?: () => void;
 }
 
 const COMMON_EAW_UNITS = [
@@ -106,10 +116,17 @@ export default function CampaignEditor({
   onTogglePreviewMode,
   hideExcludedInPreview = false,
   onToggleHideExcluded,
-  datRecords
+  datRecords,
+  canUndo = false,
+  canRedo = false,
+  onUndo,
+  onRedo,
+  canRevertNode = false,
+  onRevertNode
 }: CampaignEditorProps) {
   const lang = useLanguage();
   const [subTab, setSubTab] = useState<'general' | 'factions' | 'theater' | 'forces'>('general');
+  const [showNodeXmlPreview, setShowNodeXmlPreview] = useState(false);
 
   // State for Theater tab
   const [theaterView, setTheaterView] = useState<'planets' | 'routes'>('planets');
@@ -179,7 +196,10 @@ export default function CampaignEditor({
     const nextLocations = exists
       ? campaign.locations.filter(l => l.toLowerCase() !== planetName.toLowerCase())
       : [...campaign.locations, planetName];
-    onUpdateCampaign({ ...campaign, locations: nextLocations });
+    onUpdateCampaign(
+      { ...campaign, locations: nextLocations },
+      { label: `${campaign.name}: ${exists ? '-' : '+'}<Locations> ${planetName}` }
+    );
   };
 
   // Toggle a trade route in campaign.tradeRoutes
@@ -188,7 +208,10 @@ export default function CampaignEditor({
     const nextRoutes = exists
       ? campaign.tradeRoutes.filter(r => r.toLowerCase() !== routeName.toLowerCase())
       : [...campaign.tradeRoutes, routeName];
-    onUpdateCampaign({ ...campaign, tradeRoutes: nextRoutes });
+    onUpdateCampaign(
+      { ...campaign, tradeRoutes: nextRoutes },
+      { label: `${campaign.name}: ${exists ? '-' : '+'}<Trade_Routes> ${routeName}` }
+    );
   };
 
   // Auto-link Trade Routes where both Point_A and Point_B are active in campaign.locations
@@ -197,26 +220,42 @@ export default function CampaignEditor({
     const validRoutes = tradeRoutes
       .filter(r => locSet.has(r.pointA.toLowerCase()) && locSet.has(r.pointB.toLowerCase()))
       .map(r => r.name);
-    onUpdateCampaign({ ...campaign, tradeRoutes: validRoutes });
+    onUpdateCampaign(
+      { ...campaign, tradeRoutes: validRoutes },
+      { label: `${campaign.name}: Auto-link <Trade_Routes> (${validRoutes.length})` }
+    );
   };
 
   // Include all planets from Planets.xml
   const handleSelectAllPlanets = () => {
     const allNames = ['Galaxy_Core_Art_Model', ...planets.filter(p => p.name.toLowerCase() !== 'galaxy_core_art_model').map(p => p.name)];
-    onUpdateCampaign({ ...campaign, locations: Array.from(new Set(allNames)) });
+    onUpdateCampaign(
+      { ...campaign, locations: Array.from(new Set(allNames)) },
+      { label: `${campaign.name}: <Locations> (${allNames.length} planetas)` }
+    );
   };
 
   // Clear all planets except Galaxy_Core_Art_Model
   const handleClearPlanets = () => {
-    onUpdateCampaign({ ...campaign, locations: ['Galaxy_Core_Art_Model'] });
+    onUpdateCampaign(
+      { ...campaign, locations: ['Galaxy_Core_Art_Model'] },
+      { label: `${campaign.name}: Limpiar <Locations>` }
+    );
   };
 
   // Update a specific faction setting
   const handleUpdateFaction = (factionName: string, patch: Partial<CampaignFactionSetting>) => {
+    const patchKey = Object.keys(patch)[0] || 'setting';
     const nextFactions = campaign.factions.map(f =>
       f.faction.toLowerCase() === factionName.toLowerCase() ? { ...f, ...patch } : f
     );
-    onUpdateCampaign({ ...campaign, factions: nextFactions });
+    onUpdateCampaign(
+      { ...campaign, factions: nextFactions },
+      {
+        label: `${campaign.name}: [${factionName}] ${patchKey}`,
+        coalesceKey: `gc_${campaign.id}_fac_${factionName}_${patchKey}`
+      }
+    );
   };
 
   const handleAddFaction = () => {
@@ -236,15 +275,21 @@ export default function CampaignEditor({
       markupFilename: 'DefaultGalacticHints.xml',
       storyName: ''
     };
-    onUpdateCampaign({ ...campaign, factions: [...campaign.factions, added] });
+    onUpdateCampaign(
+      { ...campaign, factions: [...campaign.factions, added] },
+      { label: `${campaign.name}: +Facción ${clean}` }
+    );
     setNewFactionName('');
   };
 
   const handleRemoveFaction = (factionName: string) => {
-    onUpdateCampaign({
-      ...campaign,
-      factions: campaign.factions.filter(f => f.faction.toLowerCase() !== factionName.toLowerCase())
-    });
+    onUpdateCampaign(
+      {
+        ...campaign,
+        factions: campaign.factions.filter(f => f.faction.toLowerCase() !== factionName.toLowerCase())
+      },
+      { label: `${campaign.name}: -Facción ${factionName}` }
+    );
   };
 
   // Add a Starting Force entry (or increment count if identical tuple exists)
@@ -285,11 +330,14 @@ export default function CampaignEditor({
       ];
     }
 
-    onUpdateCampaign({
-      ...campaign,
-      locations: nextLocations,
-      startingForces: nextForces
-    });
+    onUpdateCampaign(
+      {
+        ...campaign,
+        locations: nextLocations,
+        startingForces: nextForces
+      },
+      { label: `${campaign.name}: +<Starting_Forces> ${cleanUnit} @ ${targetPlanet}` }
+    );
   };
 
   // 1-Click Starter Base & Garrison template on target planet
@@ -327,25 +375,39 @@ export default function CampaignEditor({
       }
     });
 
-    onUpdateCampaign({
-      ...campaign,
-      locations: nextLocations,
-      startingForces: nextForces
-    });
+    onUpdateCampaign(
+      {
+        ...campaign,
+        locations: nextLocations,
+        startingForces: nextForces
+      },
+      { label: `${campaign.name}: Guarnición Base [${faction}] @ ${planetName}` }
+    );
   };
 
   const handleUpdateForceCount = (id: string, delta: number) => {
+    const targetForce = campaign.startingForces.find(sf => sf.id === id);
     const nextForces = campaign.startingForces
       .map(sf => (sf.id === id ? { ...sf, count: sf.count + delta } : sf))
       .filter(sf => sf.count > 0);
-    onUpdateCampaign({ ...campaign, startingForces: nextForces });
+    onUpdateCampaign(
+      { ...campaign, startingForces: nextForces },
+      {
+        label: `${campaign.name}: <Starting_Forces> ${targetForce?.unitType || ''} (${delta > 0 ? '+' : ''}${delta})`,
+        coalesceKey: `gc_${campaign.id}_sf_${id}`
+      }
+    );
   };
 
   const handleDeleteForce = (id: string) => {
-    onUpdateCampaign({
-      ...campaign,
-      startingForces: campaign.startingForces.filter(sf => sf.id !== id)
-    });
+    const targetForce = campaign.startingForces.find(sf => sf.id === id);
+    onUpdateCampaign(
+      {
+        ...campaign,
+        startingForces: campaign.startingForces.filter(sf => sf.id !== id)
+      },
+      { label: `${campaign.name}: -<Starting_Forces> ${targetForce?.unitType || ''}` }
+    );
   };
 
   const nonCorePlanets = planets.filter(
@@ -385,8 +447,18 @@ export default function CampaignEditor({
       addIfMissing(tr.pointA);
       addIfMissing(tr.pointB);
     });
-    onUpdateCampaign({ ...campaign, locations: nextLocs });
+    onUpdateCampaign(
+      { ...campaign, locations: nextLocs },
+      { label: `${campaign.name}: Auto-Fix <Locations>` }
+    );
   };
+
+  const campaignXmlSnippet = useMemo(() => {
+    if (campaign.xmlNode) {
+      return new XMLSerializer().serializeToString(campaign.xmlNode);
+    }
+    return `<Campaign Name="${campaign.name}">\n  <Campaign_Set>${campaign.campaignSet}</Campaign_Set>\n  <Locations>${campaign.locations.join(', ')}</Locations>\n  <Trade_Routes>${campaign.tradeRoutes.join(', ')}</Trade_Routes>\n</Campaign>`;
+  }, [campaign]);
 
   return (
     <aside className="w-[400px] bg-slate-900 border-l border-cyan-800/30 flex flex-col h-full shadow-[-10px_0_30px_rgba(0,0,0,0.5)] z-10 shrink-0">
@@ -399,7 +471,7 @@ export default function CampaignEditor({
               {campaign.name}
             </h2>
             <span className="px-1.5 py-0.2 rounded-sm bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[9px] font-mono font-bold shrink-0">
-              v3.1
+              v3.3
             </span>
           </div>
           <div className="text-[9px] font-mono text-slate-400 mt-0.5 flex items-center gap-2">
@@ -443,6 +515,73 @@ export default function CampaignEditor({
           </button>
         </div>
       </div>
+
+      {/* XML Node History & Revert Strip (v3.3) */}
+      <div className="px-3.5 py-2 border-b border-cyan-900/30 bg-slate-950/90 flex items-center justify-between gap-1.5 shrink-0 font-mono text-[9px]">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            className="px-2 py-1 rounded-sm border border-cyan-800/50 bg-slate-900 text-cyan-300 hover:bg-cyan-950/60 disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1 cursor-pointer transition-colors"
+            title={tr(lang, 'Undo last XML action (Ctrl+Z)', 'Deshacer último cambio XML (Ctrl+Z)', 'Annuler la dernière action XML (Ctrl+Z)')}
+          >
+            <Undo2 className="w-3 h-3" />
+            <span>{tr(lang, 'Undo', 'Deshacer', 'Annuler')}</span>
+          </button>
+          <button
+            onClick={onRedo}
+            disabled={!canRedo}
+            className="px-2 py-1 rounded-sm border border-cyan-800/50 bg-slate-900 text-cyan-300 hover:bg-cyan-950/60 disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1 cursor-pointer transition-colors"
+            title={tr(lang, 'Redo XML action (Ctrl+Y)', 'Rehacer cambio XML (Ctrl+Y)', 'Rétablir l’action XML (Ctrl+Y)')}
+          >
+            <Redo2 className="w-3 h-3" />
+            <span>{tr(lang, 'Redo', 'Rehacer', 'Rétablir')}</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowNodeXmlPreview(v => !v)}
+            className={`px-2 py-1 rounded-sm border flex items-center gap-1 cursor-pointer transition-colors ${
+              showNodeXmlPreview
+                ? 'bg-emerald-950/70 border-emerald-500/60 text-emerald-200'
+                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-cyan-300'
+            }`}
+            title={tr(lang, 'Inspect live <Campaign> XML node', 'Inspeccionar nodo XML <Campaign> en vivo', 'Inspecter le nœud XML <Campaign>')}
+          >
+            <FileCode2 className="w-3 h-3" />
+            <span>&lt;XML&gt;</span>
+          </button>
+          <button
+            onClick={onRevertNode}
+            disabled={!canRevertNode}
+            className="px-2 py-1 rounded-sm border border-amber-600/50 bg-amber-950/30 text-amber-300 hover:bg-amber-900/50 disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1 cursor-pointer transition-colors"
+            title={tr(
+              lang,
+              'Revert this <Campaign> XML node to its initial loaded state',
+              'Revertir este nodo <Campaign> a su estado XML original cargado',
+              'Rétablir ce nœud <Campaign> à son état XML initial'
+            )}
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span>{tr(lang, 'Revert Node', 'Revertir Nodo', 'Rétablir Nœud')}</span>
+          </button>
+        </div>
+      </div>
+
+      {showNodeXmlPreview && (
+        <div className="px-3.5 py-2.5 bg-slate-950 border-b border-emerald-800/40 max-h-40 overflow-y-auto custom-scrollbar shrink-0">
+          <div className="flex items-center justify-between text-[9px] font-mono text-emerald-400 uppercase mb-1">
+            <span>DOM &lt;Campaign Name=&quot;{campaign.name}&quot;&gt;</span>
+            {canRevertNode && (
+              <span className="text-amber-300">{tr(lang, 'Modified from baseline', 'Modificado respecto al original', 'Modifié par rapport à l’original')}</span>
+            )}
+          </div>
+          <pre className="text-[9px] font-mono text-cyan-200/90 whitespace-pre-wrap break-all leading-relaxed bg-slate-900/90 p-2 rounded border border-cyan-900/40">
+            {campaignXmlSnippet}
+          </pre>
+        </div>
+      )}
 
       {/* Campaign Map Preview & Layout Verification Strip */}
       <div className={`px-3.5 py-2 border-b font-mono text-[9px] shrink-0 transition-colors ${
@@ -598,7 +737,12 @@ export default function CampaignEditor({
               <input
                 type="text"
                 value={campaign.name}
-                onChange={(e) => onUpdateCampaign({ ...campaign, name: e.target.value })}
+                onChange={(e) =>
+                  onUpdateCampaign(
+                    { ...campaign, name: e.target.value },
+                    { label: `${campaign.name}: @Name = ${e.target.value}`, coalesceKey: `gc_${campaign.id}_name` }
+                  )
+                }
                 className="w-full bg-slate-950 border border-cyan-900/60 px-3 py-1.5 text-xs font-mono text-emerald-300 focus:outline-none focus:border-emerald-400"
               />
             </div>
@@ -611,7 +755,12 @@ export default function CampaignEditor({
                 <input
                   type="text"
                   value={campaign.campaignSet}
-                  onChange={(e) => onUpdateCampaign({ ...campaign, campaignSet: e.target.value })}
+                  onChange={(e) =>
+                    onUpdateCampaign(
+                      { ...campaign, campaignSet: e.target.value },
+                      { label: `${campaign.name}: <Campaign_Set>`, coalesceKey: `gc_${campaign.id}_set` }
+                    )
+                  }
                   className="w-full bg-slate-950 border border-slate-800 px-2.5 py-1.5 text-xs font-mono text-cyan-100 focus:outline-none focus:border-cyan-500"
                 />
               </div>
@@ -622,7 +771,12 @@ export default function CampaignEditor({
                 <input
                   type="number"
                   value={campaign.sortOrder}
-                  onChange={(e) => onUpdateCampaign({ ...campaign, sortOrder: parseInt(e.target.value, 10) || 1 })}
+                  onChange={(e) =>
+                    onUpdateCampaign(
+                      { ...campaign, sortOrder: parseInt(e.target.value, 10) || 1 },
+                      { label: `${campaign.name}: <Sort_Order>`, coalesceKey: `gc_${campaign.id}_sort` }
+                    )
+                  }
                   className="w-full bg-slate-950 border border-slate-800 px-2.5 py-1.5 text-xs font-mono text-cyan-100 focus:outline-none focus:border-cyan-500"
                 />
               </div>
@@ -637,7 +791,12 @@ export default function CampaignEditor({
                 <input
                   type="text"
                   value={campaign.textId}
-                  onChange={(e) => onUpdateCampaign({ ...campaign, textId: e.target.value })}
+                  onChange={(e) =>
+                    onUpdateCampaign(
+                      { ...campaign, textId: e.target.value },
+                      { label: `${campaign.name}: <Text_ID>`, coalesceKey: `gc_${campaign.id}_textid` }
+                    )
+                  }
                   className="w-full bg-slate-900 border border-slate-800 px-2.5 py-1 text-xs font-mono text-purple-200 focus:outline-none focus:border-purple-500"
                 />
                 {datLookup.get(campaign.textId.toUpperCase()) && (
@@ -654,7 +813,12 @@ export default function CampaignEditor({
                 <input
                   type="text"
                   value={campaign.descriptionText}
-                  onChange={(e) => onUpdateCampaign({ ...campaign, descriptionText: e.target.value })}
+                  onChange={(e) =>
+                    onUpdateCampaign(
+                      { ...campaign, descriptionText: e.target.value },
+                      { label: `${campaign.name}: <Description_Text>`, coalesceKey: `gc_${campaign.id}_desc` }
+                    )
+                  }
                   className="w-full bg-slate-900 border border-slate-800 px-2.5 py-1 text-xs font-mono text-purple-200 focus:outline-none focus:border-purple-500"
                 />
                 {datLookup.get(campaign.descriptionText.toUpperCase()) && (
@@ -674,7 +838,12 @@ export default function CampaignEditor({
                 {campaign.factions.map((f) => (
                   <button
                     key={f.faction}
-                    onClick={() => onUpdateCampaign({ ...campaign, startingActivePlayer: f.faction })}
+                    onClick={() =>
+                      onUpdateCampaign(
+                        { ...campaign, startingActivePlayer: f.faction },
+                        { label: `${campaign.name}: <Starting_Active_Player> = ${f.faction}` }
+                      )
+                    }
                     className={`px-3 py-1.5 text-[10px] font-mono font-bold uppercase rounded-sm border transition-all cursor-pointer ${
                       campaign.startingActivePlayer.toLowerCase() === f.faction.toLowerCase()
                         ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
@@ -706,11 +875,14 @@ export default function CampaignEditor({
                         const next = isActive
                           ? campaign.humanVictoryConditions.filter(c => c.toLowerCase() !== cond.toLowerCase())
                           : [...campaign.humanVictoryConditions, cond];
-                        onUpdateCampaign({
-                          ...campaign,
-                          humanVictoryConditions: next,
-                          aiVictoryConditions: next
-                        });
+                        onUpdateCampaign(
+                          {
+                            ...campaign,
+                            humanVictoryConditions: next,
+                            aiVictoryConditions: next
+                          },
+                          { label: `${campaign.name}: ${isActive ? '-' : '+'}<Victory_Conditions> ${cond}` }
+                        );
                       }}
                       className={`px-2 py-1 text-[9px] font-mono rounded-sm border transition-colors cursor-pointer ${
                         isActive
@@ -736,12 +908,16 @@ export default function CampaignEditor({
                 <button
                   onClick={() => {
                     if (!newCustomVictory.trim()) return;
-                    const next = [...campaign.humanVictoryConditions, newCustomVictory.trim()];
-                    onUpdateCampaign({
-                      ...campaign,
-                      humanVictoryConditions: next,
-                      aiVictoryConditions: next
-                    });
+                    const cleanCond = newCustomVictory.trim();
+                    const next = [...campaign.humanVictoryConditions, cleanCond];
+                    onUpdateCampaign(
+                      {
+                        ...campaign,
+                        humanVictoryConditions: next,
+                        aiVictoryConditions: next
+                      },
+                      { label: `${campaign.name}: +<Victory_Conditions> ${cleanCond}` }
+                    );
                     setNewCustomVictory('');
                   }}
                   className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-600 text-slate-950 font-mono font-bold text-[10px] uppercase rounded-sm cursor-pointer"
@@ -787,7 +963,10 @@ export default function CampaignEditor({
                       type="checkbox"
                       checked={campaign[flag.key]}
                       onChange={(e) =>
-                        onUpdateCampaign({ ...campaign, [flag.key]: e.target.checked })
+                        onUpdateCampaign(
+                          { ...campaign, [flag.key]: e.target.checked },
+                          { label: `${campaign.name}: <${flag.key}> = ${e.target.checked ? 'Yes' : 'No'}` }
+                        )
                       }
                       className="accent-emerald-500"
                     />
@@ -808,7 +987,12 @@ export default function CampaignEditor({
                     type="number"
                     step="10"
                     value={campaign.cameraShiftX}
-                    onChange={(e) => onUpdateCampaign({ ...campaign, cameraShiftX: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      onUpdateCampaign(
+                        { ...campaign, cameraShiftX: parseFloat(e.target.value) || 0 },
+                        { label: `${campaign.name}: <Camera_Shift_X>`, coalesceKey: `gc_${campaign.id}_camx` }
+                      )
+                    }
                     className="w-full bg-slate-950 border border-slate-800 px-2 py-1 text-xs font-mono text-cyan-200"
                   />
                 </div>
@@ -818,7 +1002,12 @@ export default function CampaignEditor({
                     type="number"
                     step="10"
                     value={campaign.cameraShiftY}
-                    onChange={(e) => onUpdateCampaign({ ...campaign, cameraShiftY: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) =>
+                      onUpdateCampaign(
+                        { ...campaign, cameraShiftY: parseFloat(e.target.value) || 0 },
+                        { label: `${campaign.name}: <Camera_Shift_Y>`, coalesceKey: `gc_${campaign.id}_camy` }
+                      )
+                    }
                     className="w-full bg-slate-950 border border-slate-800 px-2 py-1 text-xs font-mono text-cyan-200"
                   />
                 </div>
@@ -828,7 +1017,12 @@ export default function CampaignEditor({
                     type="number"
                     step="50"
                     value={campaign.cameraDistance}
-                    onChange={(e) => onUpdateCampaign({ ...campaign, cameraDistance: parseFloat(e.target.value) || 1000 })}
+                    onChange={(e) =>
+                      onUpdateCampaign(
+                        { ...campaign, cameraDistance: parseFloat(e.target.value) || 1000 },
+                        { label: `${campaign.name}: <Camera_Distance>`, coalesceKey: `gc_${campaign.id}_camdist` }
+                      )
+                    }
                     className="w-full bg-slate-950 border border-slate-800 px-2 py-1 text-xs font-mono text-cyan-200"
                   />
                 </div>
@@ -842,6 +1036,67 @@ export default function CampaignEditor({
         {/* ============================================================ */}
         {subTab === 'factions' && (
           <div className="space-y-4">
+            {/* Galactic Economy & Faction Income Telemetry Summary (v3.2) */}
+            <div className="bg-slate-950/80 border border-emerald-900/50 p-3 rounded-sm space-y-2 font-mono">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                  <Coins className="w-3.5 h-3.5 text-amber-400" />
+                  {tr(lang, 'Galactic Economy & Starting Balance (v3.2)', 'Economía Galáctica y Balance Inicial (v3.2)', 'Économie Galactique & Équilibre (v3.2)')}
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                {campaign.factions.map((fac) => {
+                  const facLower = fac.faction.toLowerCase();
+                  // Planets controlled by this faction
+                  const controlledPlanetNames = new Set<string>();
+                  if (fac.homeLocation) controlledPlanetNames.add(fac.homeLocation.toLowerCase());
+                  campaign.startingForces.forEach(sf => {
+                    if (sf.faction.toLowerCase() === facLower && sf.planet) {
+                      controlledPlanetNames.add(sf.planet.toLowerCase());
+                    }
+                  });
+
+                  let baseCycleIncome = 0;
+                  controlledPlanetNames.forEach(pLower => {
+                    const pObj = planets.find(p => p.name.toLowerCase() === pLower);
+                    if (pObj) {
+                      const creditNode = pObj.el.getElementsByTagName('Planet_Credit_Value')[0];
+                      const val = parseFloat(creditNode?.textContent || '120') || 120;
+                      baseCycleIncome += val;
+                    } else {
+                      baseCycleIncome += 100;
+                    }
+                  });
+
+                  const totalUnits = campaign.startingForces
+                    .filter(sf => sf.faction.toLowerCase() === facLower)
+                    .reduce((acc, s) => acc + s.count, 0);
+
+                  return (
+                    <div
+                      key={fac.faction}
+                      className="flex items-center justify-between bg-slate-900/80 border border-slate-800 px-2.5 py-1.5 rounded-sm text-[10px]"
+                    >
+                      <span className="font-bold text-slate-200 uppercase truncate max-w-[110px]">
+                        {fac.faction}
+                      </span>
+                      <div className="flex items-center gap-2.5 tabular-nums text-[9px]">
+                        <span className="text-cyan-300" title="Controlled Planets">
+                          {controlledPlanetNames.size} {tr(lang, 'pl.', 'plan.', 'pl.')}
+                        </span>
+                        <span className="text-emerald-400 font-bold" title="Cycle Credit Income from Planet_Credit_Value">
+                          +{baseCycleIncome} cr/ciclo
+                        </span>
+                        <span className="text-purple-300" title="Starting Force Units">
+                          {totalUnits} {tr(lang, 'u.', 'uds.', 'u.')}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Add Custom Mod Faction */}
             <div className="flex gap-1.5 bg-slate-950/70 p-2.5 border border-slate-800 rounded-sm">
               <input

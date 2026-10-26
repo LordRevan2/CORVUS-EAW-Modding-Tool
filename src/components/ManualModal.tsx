@@ -47,61 +47,67 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
     {
       id: 'planets',
       label: tr(lang, '3. Galaxy & Planets', '3. Galaxia y Planetas', '3. Galaxie & Planètes'),
-      badge: 'v2.5',
+      badge: 'v2.7',
       icon: Globe,
     },
     {
       id: 'campaigns',
       label: tr(lang, '4. Galactic Conquest', '4. Conquista Galáctica', '4. Conquête Galactique'),
-      badge: 'v3.1',
+      badge: 'v3.3',
       icon: Shield,
     },
     {
       id: 'story',
       label: tr(lang, '5. Story Campaigns', '5. Eventos de Historia', '5. Campagnes Histoire'),
-      badge: 'v2.1',
+      badge: 'v2.2',
       icon: Sparkles,
     },
     {
       id: 'units',
-      label: tr(lang, '6. Unit Balance', '6. Balance de Unidades', '6. Équilibrage Unités'),
-      badge: 'v1.1',
+      label: tr(lang, '6. Unit & Roster Editor', '6. Editor de Unidades', '6. Éditeur d\'Unités'),
+      badge: 'v1.4',
       icon: Database,
     },
     {
+      id: 'hardpoints',
+      label: tr(lang, '7. HardPoints & Projectiles', '7. HardPoints y Proyectiles', '7. HardPoints & Projectiles'),
+      badge: 'v1.1',
+      icon: MapPin,
+    },
+    {
       id: 'translations',
-      label: tr(lang, '7. Translations (.DAT)', '7. Traducciones (.DAT)', '7. Traductions (.DAT)'),
+      label: tr(lang, '8. Translations (.DAT)', '8. Traducciones (.DAT)', '8. Traductions (.DAT)'),
       badge: 'v1.3',
       icon: FileText,
     },
     {
       id: 'mtd',
-      label: tr(lang, '8. Mega Textures (.MTD)', '8. Mega Texturas (.MTD)', '8. MegaTextures (.MTD)'),
+      label: tr(lang, '9. Mega Textures (.MTD)', '9. Mega Texturas (.MTD)', '9. MegaTextures (.MTD)'),
       badge: 'v1.3',
       icon: ImageIcon,
     },
     {
       id: 'dialog',
-      label: tr(lang, '9. Dialog & Briefings', '9. Diálogos y Guiones', '9. Dialogues & Briefings'),
+      label: tr(lang, '10. Dialog & Briefings', '10. Diálogos y Guiones', '10. Dialogues & Briefings'),
       badge: 'v1.1',
       icon: MessageSquare,
     },
     {
       id: 'rawxml',
-      label: tr(lang, '10. Raw XML Editor', '10. Editor Código XML', '10. Éditeur Code XML'),
+      label: tr(lang, '11. Raw XML Editor', '11. Editor Código XML', '11. Éditeur Code XML'),
       badge: 'v2.1',
       icon: Code,
     },
     {
       id: 'rawlua',
-      label: tr(lang, '11. Raw LUA 5.0 IDE', '11. Editor Script LUA', '11. Éditeur Script LUA'),
+      label: tr(lang, '12. Raw LUA 5.0 IDE', '12. Editor Script LUA', '12. Éditeur Script LUA'),
       badge: 'v2.2',
       icon: Terminal,
     },
     {
       id: 'export',
-      label: tr(lang, '12. Settings, Updates & Export', '12. Ajustes, Updates y Exportar', '12. Options, MAJ & Export'),
-      badge: 'SYS',
+      label: tr(lang, '13. Mod Auditor & Export', '13. Auditor de Mod y Exportar', '13. Auditeur & Export'),
+      badge: 'v1.0',
       icon: Download,
     },
   ];
@@ -176,8 +182,8 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
 
             <div className="p-2.5 border-t border-slate-800 bg-slate-900/40 flex items-center justify-between px-4">
               <span className="text-[9px] text-slate-500 font-mono uppercase tracking-wider">CORVUS SUITE</span>
-              <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-sm bg-gradient-to-b from-slate-200 via-slate-300 to-slate-400 text-slate-950 border border-amber-400/80">
-                v{packageJson.version}
+              <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-sm bg-gradient-to-r from-purple-950 via-purple-800 to-fuchsia-950 text-purple-100 border border-amber-400/90 shadow-[0_0_10px_rgba(168,85,247,0.35)]">
+                v{packageJson.version} <strong className="text-amber-300">// REVAN</strong>
               </span>
             </div>
           </div>
@@ -208,34 +214,38 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="bg-slate-950/60 border border-cyan-900/50 p-3.5 rounded-sm space-y-1.5">
                     <span className="text-[10px] font-mono uppercase text-cyan-400 font-bold block">
-                      {tr(lang, 'Galaxy & Strategy (4 Tools)', 'Galaxia y Estrategia (4 Herramientas)', 'Galaxie & Stratégie (4 Outils)')}
+                      {tr(lang, 'Galaxy, Units & Combat (6 Tools)', 'Galaxia, Unidades y Combate (6 Herramientas)', 'Galaxie, Unités & Combat (6 Outils)')}
                     </span>
                     <ul className="text-[11px] space-y-1 text-slate-400 font-mono">
-                      <li>• {tr(lang, 'Galaxy & Planets (v2.5)', 'Galaxia y Planetas (v2.5)', 'Galaxie & Planètes (v2.5)')}</li>
-                      <li>• {tr(lang, 'Galactic Conquest (v3.1)', 'Conquista Galáctica (v3.1)', 'Conquête Galactique (v3.1)')}</li>
-                      <li>• {tr(lang, 'Story Event Plots (v2.1)', 'Eventos de Historia (v2.1)', 'Événements Histoire (v2.1)')}</li>
-                      <li>• {tr(lang, 'Unit Stat Balance (v1.1)', 'Balance de Unidades (v1.1)', 'Équilibrage Unités (v1.1)')}</li>
+                      <li>• {tr(lang, 'Galaxy & Planets (v2.7)', 'Galaxia y Planetas (v2.7)', 'Galaxie & Planètes (v2.7)')}</li>
+                      <li>• {tr(lang, 'Galactic Conquest (v3.3)', 'Conquista Galáctica (v3.3)', 'Conquête Galactique (v3.3)')}</li>
+                      <li>• {tr(lang, 'Story Plots 2D Graph (v2.2)', 'Eventos de Historia 2D (v2.2)', 'Événements Histoire 2D (v2.2)')}</li>
+                      <li>• {tr(lang, 'Unit & TTK Duel Editor (v1.4)', 'Unidades + Duelo TTK (v1.4)', 'Unités + Duel TTK (v1.4)')}</li>
+                      <li>• {tr(lang, 'HardPoints & Projectiles (v1.1)', 'HardPoints y Proyectiles (v1.1)', 'HardPoints & Projectiles (v1.1)')}</li>
+                      <li>• {tr(lang, 'Tech Tree & Factions (v1.0)', 'Árbol Tech y Facciones (v1.0)', 'Arbre Tech & Factions (v1.0)')}</li>
                     </ul>
                   </div>
 
                   <div className="bg-slate-950/60 border border-purple-900/50 p-3.5 rounded-sm space-y-1.5">
                     <span className="text-[10px] font-mono uppercase text-purple-400 font-bold block">
-                      {tr(lang, 'Localization & UI (3 Tools)', 'Localización e Interfaz (3 Herramientas)', 'Localisation & UI (3 Outils)')}
+                      {tr(lang, 'Localization, Audio & UI (4 Tools)', 'Localización, Audio e Interfaz (4 Herramientas)', 'Localisation, Audio & UI (4 Outils)')}
                     </span>
                     <ul className="text-[11px] space-y-1 text-slate-400 font-mono">
                       <li>• {tr(lang, 'MasterTextFile .DAT (v1.3)', 'Traducciones .DAT (v1.3)', 'Traductions .DAT (v1.3)')}</li>
-                      <li>• {tr(lang, 'Mega-Texture .MTD (v1.2)', 'Mega-Texturas .MTD (v1.2)', 'MegaTextures .MTD (v1.2)')}</li>
+                      <li>• {tr(lang, 'Mega-Texture .MTD (v1.3)', 'Mega-Texturas .MTD (v1.3)', 'MegaTextures .MTD (v1.3)')}</li>
                       <li>• {tr(lang, 'Dialog & Briefings .TXT (v1.1)', 'Diálogos y Guiones .TXT (v1.1)', 'Dialogues .TXT (v1.1)')}</li>
+                      <li>• {tr(lang, 'Audio SFXEvents.xml (v1.0)', 'Audio SFXEvents.xml (v1.0)', 'Audio SFXEvents.xml (v1.0)')}</li>
                     </ul>
                   </div>
 
                   <div className="bg-slate-950/60 border border-amber-900/50 p-3.5 rounded-sm space-y-1.5">
                     <span className="text-[10px] font-mono uppercase text-amber-400 font-bold block">
-                      {tr(lang, 'Code & Scripting (2 Tools)', 'Código y Scripting (2 Herramientas)', 'Code & Scripting (2 Outils)')}
+                      {tr(lang, 'Code & Diagnostics (3 Tools)', 'Código y Diagnóstico (3 Herramientas)', 'Code & Diagnostic (3 Outils)')}
                     </span>
                     <ul className="text-[11px] space-y-1 text-slate-400 font-mono">
                       <li>• {tr(lang, 'Raw XML DOM Editor (v2.1)', 'Editor Código XML (v2.1)', 'Éditeur Code XML (v2.1)')}</li>
-                      <li>• {tr(lang, 'Raw LUA 5.0 IDE (v2.1)', 'IDE Scripts LUA 5.0 (v2.1)', 'IDE Scripts LUA 5.0 (v2.1)')}</li>
+                      <li>• {tr(lang, 'Raw LUA 5.0 IDE (v2.2)', 'IDE Scripts LUA 5.0 (v2.2)', 'IDE Scripts LUA 5.0 (v2.2)')}</li>
+                      <li>• {tr(lang, 'Mod Integrity Validator (v1.0)', 'Auditor Global del Mod (v1.0)', 'Auditeur Global du Mod (v1.0)')}</li>
                     </ul>
                   </div>
                 </div>
@@ -358,7 +368,7 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
                     {tr(lang, '3. Galaxy, Planet & Trade Route Editor', '3. Editor de Galaxia, Planetas y Rutas Comerciales', '3. Éditeur de Galaxie, Planètes & Routes Commerciales')}
                   </h3>
                   <span className="text-[10px] font-mono px-2 py-0.5 bg-cyan-950/60 text-cyan-300 border border-cyan-700/50 rounded-sm">
-                    v2.5 // Planets.xml & TradeRoutes.xml
+                    v2.7 // Planets.xml, TradeRoutes.xml, Undo/Redo & A* Pathfinding
                   </span>
                 </div>
 
@@ -439,16 +449,16 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
                     {tr(lang, '4. Galactic Conquest Editor', '4. Editor de Conquista Galáctica (Campaigns.xml)', '4. Éditeur de Conquête Galactique (Campaigns.xml)')}
                   </h3>
                   <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-950/60 text-emerald-300 border border-emerald-700/50 rounded-sm">
-                    v3.1 // Campaigns.xml
+                    v3.3 // Campaigns.xml, Undo/Redo & Faction Economy
                   </span>
                 </div>
 
                 <p className="text-xs leading-relaxed text-slate-300">
                   {tr(
                     lang,
-                    'The Galactic Conquest Editor (v3.1) lets you create, clone, and balance complete Galactic Conquest scenarios (<Campaign> nodes in Campaigns.xml) directly on top of the interactive galaxy map.',
-                    'El Editor de Conquista Galáctica (v3.1) permite crear, clonar y balancear escenarios completos de Conquista Galáctica (nodos <Campaign> en Campaigns.xml) directamente sobre el mapa galáctico interactivo.',
-                    "L'Éditeur de Conquête Galactique (v3.1) permet de créer, cloner et équilibrer des scénarios complets de Conquête Galactique (<Campaign> dans Campaigns.xml) directement sur la carte galactique interactive."
+                    'The Galactic Conquest Editor (v3.3) lets you create, clone, and balance complete Galactic Conquest scenarios (<Campaign> nodes in Campaigns.xml) directly on top of the interactive galaxy map, featuring real-time Galactic Economy telemetry and a full XML Undo/Redo & Node Revert history engine.',
+                    'El Editor de Conquista Galáctica (v3.3) permite crear, clonar y balancear escenarios completos de Conquista Galáctica (nodos <Campaign> en Campaigns.xml) directamente sobre el mapa galáctico interactivo, incorporando economía galáctica por facción y un motor de Historial de Acciones XML (Undo/Redo) y reversión individual de nodos.',
+                    "L'Éditeur de Conquête Galactique (v3.3) permet de créer, cloner et équilibrer des scénarios complets de Conquête Galactique (<Campaign> dans Campaigns.xml) directement sur la carte galactique interactive avec économie par faction et historique d'actions XML (Undo/Redo)."
                   )}
                 </p>
 
@@ -520,30 +530,30 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
                     {tr(lang, '5. Story Campaign Event Editor', '5. Editor de Eventos de Historia y Campañas', '5. Éditeur d\'Événements de Campagne Histoire')}
                   </h3>
                   <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-950/60 text-emerald-300 border border-emerald-700/50 rounded-sm">
-                    v2.1 // Story_*.xml
+                    v2.2 // Story_*.xml + 2D Nodal DAG Graph
                   </span>
                 </div>
 
                 <p className="text-xs leading-relaxed text-slate-300">
                   {tr(
                     lang,
-                    'Empire at War uses event-driven XML state machines (Story_*.xml) to trigger missions, spawn heroes, lock/unlock tech, play holocron movies, and launch tactical battles. The Story Editor turns these complex XML chains into an intuitive visual node & inspector workflow.',
-                    'Empire at War utiliza máquinas de estados basadas en eventos XML (Story_*.xml) para activar misiones, generar héroes, desbloquear tecnología, reproducir vídeos del holocrón y lanzar batallas tácticas. El Editor de Historia convierte estas cadenas XML en un flujo visual e intuitivo.',
-                    "Empire at War utilise des machines d'états XML événementielles (Story_*.xml) pour déclencher des missions, faire apparaître des héros, débloquer des technologies et lancer des batailles tactiques. L'Éditeur d'Histoire transforme ces chaînes XML en un flux visuel intuitif."
+                    'Empire at War uses event-driven XML state machines (Story_*.xml) to trigger missions, spawn heroes, lock/unlock tech, play holocron movies, and launch tactical battles. Version 2.2 adds an interactive 2D Nodal Event Graph (DAG) that automatically arranges events into topological tiers and draws Bézier curves for <Prereq> and ENABLE_EVENT / DISABLE_EVENT chains.',
+                    'Empire at War utiliza máquinas de estados basadas en eventos XML (Story_*.xml) para activar misiones, generar héroes, desbloquear tecnología, reproducir vídeos del holocrón y lanzar batallas tácticas. La versión 2.2 incorpora un Grafo Nodal 2D interactivo (DAG) que organiza los eventos por niveles topológicos y traza curvas Bézier para <Prereq> y cadenas ENABLE_EVENT / DISABLE_EVENT.',
+                    "Empire at War utilise des machines d'états XML événementielles (Story_*.xml) pour déclencher des missions, faire apparaître des héros et lancer des batailles tactiques. La version 2.2 ajoute un Graphe Nodal 2D interactif (DAG) traçant les chaînes <Prereq> et ENABLE_EVENT / DISABLE_EVENT."
                   )}
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                   <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm space-y-1.5">
                     <span className="font-mono font-bold text-emerald-400 uppercase block">
-                      {tr(lang, 'Event Graph & Prerequisite Chains', 'Grafo de Eventos y Cadenas de Prerrequisitos', 'Graphe d\'Événements & Prérequis')}
+                      {tr(lang, 'Interactive 2D Nodal Event Graph & Prerequisite Chains', 'Grafo Nodal 2D Interactivo y Cadenas de Prerrequisitos', 'Graphe Nodal 2D Interactif & Prérequis')}
                     </span>
                     <p className="text-slate-400 leading-relaxed">
                       {tr(
                         lang,
-                        'Browse all <Event> nodes in chronological order or inspect their <Prereq> dependencies and <Branch> groups to trace how one mission trigger unlocks subsequent events.',
-                        'Explora todos los nodos <Event> en orden cronológico o inspecciona sus dependencias <Prereq> y ramificaciones <Branch> para visualizar cómo un evento desbloquea los siguientes.',
-                        'Parcourez tous les nœuds <Event> par ordre chronologique ou inspectez leurs dépendances <Prereq> et leurs branches <Branch>.'
+                        'Switch to the "2D Event Graph" view to zoom and pan across your campaign state machine, inspect topological tiers, and click any node card to open it in the Visual Inspector.',
+                        'Cambia a la vista "Grafo 2D" para hacer zoom y desplazarte por la máquina de estados de la campaña, inspeccionar niveles topológicos y pulsar cualquier nodo para editarlo.',
+                        'Basculez sur la vue « Graphe 2D » pour explorer visuellement la machine d\'états de votre campagne et cliquer sur n\'importe quel nœud.'
                       )}
                     </p>
                   </div>
@@ -579,52 +589,105 @@ export default function ManualModal({ isOpen, onClose }: ManualModalProps) {
               </div>
             )}
 
-            {/* 6. UNIT BALANCE EDITOR */}
+            {/* 6. UNIT & ROSTER EDITOR */}
             {activeTab === 'units' && (
               <div className="space-y-4 animate-fade-in">
                 <div className="border-b border-emerald-800/60 pb-2.5 flex items-center justify-between">
                   <h3 className="text-base font-bold text-emerald-400 uppercase tracking-wider font-mono">
-                    {tr(lang, '6. Unit Balance Editor', '6. Editor de Balance de Unidades', '6. Éditeur d\'Équilibrage des Unités')}
+                    {tr(lang, '6. Alamo Unit & Roster Editor', '6. Editor de Unidades y Flotas (Alamo Engine)', '6. Éditeur d\'Unités & Flottes')}
                   </h3>
                   <span className="text-[10px] font-mono px-2 py-0.5 bg-emerald-950/60 text-emerald-300 border border-emerald-700/50 rounded-sm">
-                    v1.1 // SpaceUnits & GroundUnits
+                    v1.4 // SpaceUnits, GroundUnits, Squadrons & 1v1 TTK Duel Simulator
                   </span>
                 </div>
 
                 <p className="text-xs leading-relaxed text-slate-300">
                   {tr(
                     lang,
-                    'The Unit Balance Editor (v1.1) is designed to rapidly inspect, compare, and balance combat and economic statistics across SpaceUnitsCapital.xml, SpaceUnitsFrigates.xml, Squadrons.xml, GroundInfantry.xml, GroundVehicles.xml, Heroes, and Starbases.',
-                    'El Editor de Balance de Unidades (v1.1) está diseñado para inspeccionar, comparar y ajustar rápidamente estadísticas económicas y de combate en archivos como SpaceUnitsCapital.xml, SpaceUnitsFrigates.xml, Squadrons.xml, GroundInfantry.xml, GroundVehicles.xml, Héroes y Estaciones.',
-                    "L'Éditeur d'Équilibrage des Unités (v1.1) permet d'inspecter, comparer et équilibrer rapidement les statistiques économiques et de combat dans SpaceUnitsCapital.xml, SpaceUnitsFrigates.xml, Squadrons.xml, GroundInfantry.xml, GroundVehicles.xml, Héros et Bases."
+                    'The Alamo Unit & Roster Editor (v1.4) is a complete engineering studio for creating, cloning, inspecting, and balancing SpaceUnits, Squadrons, GroundVehicles, GroundInfantry, GroundCompanies, HeroUnits, and StarBases across any XML file in Data/XML/, now featuring a Side-by-Side 1v1 TTK (Time-To-Kill) Duel Simulator.',
+                    'El Editor de Unidades y Flotas (v1.4) es una estación completa para crear, clonar, inspeccionar y balancear SpaceUnits, Squadrons, GroundVehicles, GroundInfantry, GroundCompanies, HeroUnits y StarBases en cualquier archivo XML de Data/XML/, incorporando ahora el Simulador de Duelo TTK (Time-To-Kill) 1v1 en la vista Versus.',
+                    "L'Éditeur d'Unités & Flottes (v1.4) est un studio complet pour créer, cloner, inspecter et équilibrer toutes les unités spatiales et terrestres dans Data/XML/, avec un simulateur de duel TTK (Time-To-Kill) 1v1 côte à côte."
                   )}
                 </p>
 
-                <div className="space-y-2.5 text-xs">
-                  <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm">
-                    <span className="font-mono font-bold text-emerald-400 uppercase block mb-1">
-                      {tr(lang, 'Comparative Stat Matrix & Search', 'Matriz Comparativa de Estadísticas y Búsqueda', 'Matrice Comparative des Statistiques & Recherche')}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm space-y-1.5">
+                    <span className="font-mono font-bold text-emerald-400 uppercase block">
+                      {tr(lang, '1. 6-Tab Visual Unit Inspector & EHP Telemetry', '1. Inspector Visual en 6 Pestañas y Calculadora EHP', '1. Inspecteur Visuel en 6 Onglets & EHP')}
                     </span>
                     <p className="text-slate-400 leading-relaxed">
                       {tr(
                         lang,
-                        'Filter units by name, XML tag type (<SpaceUnit>, <Squadron>, <GroundInfantry>, <GroundVehicle>, <HeroUnit>), or faction (<Affiliation>). Compare health, shields, speed, cost, build time, and tech level side by side.',
-                        'Filtra unidades por nombre, tipo de nodo XML (<SpaceUnit>, <Squadron>, <GroundInfantry>, <GroundVehicle>, <HeroUnit>) o facción (<Affiliation>). Compara vida, escudos, velocidad, coste, tiempo de construcción y nivel tecnológico de un vistazo.',
-                        'Filtrez les unités par nom, type de nœud XML (<SpaceUnit>, <Squadron>, <GroundInfantry>, <GroundVehicle>, <HeroUnit>) ou faction (<Affiliation>). Comparez santé, boucliers, vitesse, coût et niveau technologique.'
+                        'Edit Identity & 3D Models (.ALO / .MTD), Economy & Prerequisites (Credits, Time, Tech, Required Planets/Structures), Hull & Shields (with live Effective Health EHP and EHP/Credit ratio), Propulsion & Radar FOW, HardPoints & Hangar Spawns, and every custom XML tag on the unit.',
+                        'Edita Identidad y Modelos 3D (.ALO / .MTD), Economía y Requisitos (Créditos, Tiempo, Tech, Planetas/Estructuras), Casco y Escudos (con cálculo de Vida Efectiva EHP y ratio EHP/Crédito en vivo), Propulsión y Radar FOW, HardPoints y Cazas del Hangar, además de todas las etiquetas XML de la unidad.',
+                        'Modifiez Identité & Modèles 3D, Économie & Prérequis, Coque & Boucliers (avec calcul EHP en direct), Propulsion & Radar, HardPoints & Hangar, ainsi que toutes les balises XML.'
                       )}
                     </p>
                   </div>
 
-                  <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm">
-                    <span className="font-mono font-bold text-emerald-400 uppercase block mb-1">
-                      {tr(lang, 'Direct Property Tuning & Non-Destructive XML Export', 'Ajuste Directo de Atributos y Exportación XML No Destructiva', 'Ajustement Direct des Attributs & Export XML Non Destructif')}
+                  <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm space-y-1.5">
+                    <span className="font-mono font-bold text-emerald-400 uppercase block">
+                      {tr(lang, '2. 1v1 TTK Duel Simulator, Table & Batch % Scaler', '2. Simulador Duelo TTK 1v1, Tabla y Balance Masivo (%)', '2. Simulateur Duel TTK 1v1, Tableau & Lot (%)')}
                     </span>
                     <p className="text-slate-400 leading-relaxed">
                       {tr(
                         lang,
-                        'Modify <Tactical_Health>, <Shield_Points>, <Shield_Refresh_Rate>, <Build_Cost_Credits>, <Build_Time_Seconds>, <Tech_Level>, <Max_Speed>, <Space_FOW_Reveal_Range>, <Damage>, and <HardPoints> while keeping all custom XML properties intact.',
-                        'Modifica <Tactical_Health>, <Shield_Points>, <Shield_Refresh_Rate>, <Build_Cost_Credits>, <Build_Time_Seconds>, <Tech_Level>, <Max_Speed>, <Space_FOW_Reveal_Range>, <Damage> y <HardPoints> manteniendo intacta toda la estructura XML original.',
-                        'Modifiez <Tactical_Health>, <Shield_Points>, <Shield_Refresh_Rate>, <Build_Cost_Credits>, <Build_Time_Seconds>, <Tech_Level>, <Max_Speed>, <Damage> et <HardPoints> tout en préservant l\'intégralité de la structure XML d\'origine.'
+                        'Pit any Unit A vs Unit B in the 1v1 Versus view with live Time-To-Kill (TTK) combat simulation, shield regeneration factoring, winner & remaining hull % prediction, percentage delta badges (Δ%), or use the Batch % Scaler.',
+                        'Enfrenta cualquier Unidad A contra Unidad B en la vista Versus 1v1 con simulación de Tiempo de Destrucción (TTK), regeneración de escudos, predicción de ganador y % de casco restante, o usa el Balance Masivo (%).',
+                        'Comparez deux unités en mode Versus 1v1 avec simulation de combat TTK en direct, régénération des boucliers et prédiction du vainqueur.'
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 7. HARDPOINTS & PROJECTILES XML EDITOR */}
+            {activeTab === 'hardpoints' && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="border-b border-rose-800/60 pb-2.5 flex items-center justify-between">
+                  <h3 className="text-base font-bold text-rose-400 uppercase tracking-wider font-mono">
+                    {tr(lang, '7. HardPoints & Projectiles XML Editor', '7. Editor de HardPoints y Proyectiles XML', '7. Éditeur de HardPoints & Projectiles XML')}
+                  </h3>
+                  <span className="text-[10px] font-mono px-2 py-0.5 bg-rose-950/60 text-rose-300 border border-rose-700/50 rounded-sm">
+                    v1.1 // HardPoints.xml, Projectiles.xml & Target TTK Simulator
+                  </span>
+                </div>
+
+                <p className="text-xs leading-relaxed text-slate-300">
+                  {tr(
+                    lang,
+                    'The HardPoints & Projectiles Editor (v1.0) provides a specialized tactical weapons laboratory for editing ship turrets, shield generators, engines, and laser/missile ammunition in HardPoints.xml and Projectiles.xml.',
+                    'El Editor de HardPoints y Proyectiles XML (v1.0) ofrece un laboratorio táctico de armamento para configurar torretas, generadores de escudo, motores y munición láser/misiles en HardPoints.xml y Projectiles.xml.',
+                    "L'Éditeur de HardPoints & Projectiles XML (v1.0) offre un laboratoire d'armement tactique pour configurer les tourelles, boucliers, moteurs et munitions dans HardPoints.xml et Projectiles.xml."
+                  )}
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm space-y-1.5">
+                    <span className="font-mono font-bold text-rose-400 uppercase block">
+                      {tr(lang, '1. 2D Firing Arc Radar & Salvo DPS Calculator', '1. Radar 2D de Cono de Disparo y Calculadora DPS', '1. Radar 2D d\'Angle de Tir & Calculateur DPS')}
+                    </span>
+                    <p className="text-slate-400 leading-relaxed">
+                      {tr(
+                        lang,
+                        'Visualize <Fire_Cone_Width> and <Fire_Cone_Height> in a live 2D turret firing arc schematic while CORVUS calculates shots per salvo, cycle duration, and sustained DPS from pulse counts, delays, and recharge times.',
+                        'Visualiza <Fire_Cone_Width> y <Fire_Cone_Height> en un radar 2D del arco de tiro en vivo mientras CORVUS calcula los disparos por ráfaga, duración del ciclo y DPS sostenido según pulsos y recarga.',
+                        'Visualisez <Fire_Cone_Width> et <Fire_Cone_Height> sur un radar 2D en direct avec calcul automatique de la cadence et du DPS soutenu.'
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-sm space-y-1.5">
+                    <span className="font-mono font-bold text-rose-400 uppercase block">
+                      {tr(lang, '2. RGBA Laser Color Picker & Bone Attachments', '2. Selector de Color Láser RGBA y Huesos 3D (.ALO)', '2. Sélecteur de Couleur Laser RGBA & Os 3D')}
+                    </span>
+                    <p className="text-slate-400 leading-relaxed">
+                      {tr(
+                        lang,
+                        'Preview and edit <Projectile_Laser_Color> (R,G,B,A) with a live glowing laser beam simulator, and configure <Attachment_Bone>, <Collision_Mesh>, <Muzzle_Bone_Name>, and <Damage_Decal> bindings.',
+                        'Previsualiza y edita <Projectile_Laser_Color> (R,G,B,A) con un simulador de haz láser luminoso en vivo, y configura los huesos 3D <Attachment_Bone>, <Collision_Mesh>, <Muzzle_Bone_Name> y <Damage_Decal>.',
+                        'Prévisualisez et modifiez <Projectile_Laser_Color> (R,G,B,A) en direct et configurez les os 3D <Attachment_Bone>, <Collision_Mesh> et <Muzzle_Bone_Name>.'
                       )}
                     </p>
                   </div>

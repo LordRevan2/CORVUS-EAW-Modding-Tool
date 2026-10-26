@@ -748,7 +748,8 @@ export default function StoryEditor({
   const [hideCrossFileInSidebar, setHideCrossFileInSidebar] = useState<boolean>(false);
   const [auditFilter, setAuditFilter] = useState<'all' | 'errors' | 'warnings' | 'cross_file'>('all');
 
-  const [viewMode, setViewMode] = useState<'params' | 'flow' | 'xml'>('params');
+  const [viewMode, setViewMode] = useState<'params' | 'flow' | 'graph' | 'xml'>('params');
+  const [graphZoom, setGraphZoom] = useState<number>(1);
   const [xmlScope, setXmlScope] = useState<'event' | 'document'>('event');
   const [rawXmlText, setRawXmlText] = useState<string>('');
   const [isXmlDirty, setIsXmlDirty] = useState<boolean>(false);
@@ -1294,6 +1295,147 @@ export default function StoryEditor({
     return datMap.get(val.trim().toUpperCase()) || null;
   };
 
+  // Compute 2D Topological DAG Layout for Story Event Graph (v2.2)
+  const storyGraphLayout = useMemo(() => {
+    const nodeWidth = 220;
+    const nodeHeight = 76;
+    const colGap = 290;
+    const rowGap = 102;
+
+    const nameToEvent = new Map<string, StoryEvent>();
+    filteredEvents.forEach((ev) => nameToEvent.set(ev.name.trim().toLowerCase(), ev));
+
+    const depthMemo = new Map<string, number>();
+    const visiting = new Set<string>();
+
+    const getDepth = (ev: StoryEvent): number => {
+      const key = ev.id;
+      if (depthMemo.has(key)) return depthMemo.get(key)!;
+      if (visiting.has(key)) return 0; // cycle guard
+      visiting.add(key);
+
+      let maxParentDepth = -1;
+      ev.prereqs.forEach((pr) => {
+        const tokens = pr
+          .split(/[,;\s]+/)
+          .map((s) => s.trim().toLowerCase())
+          .filter(Boolean);
+        tokens.forEach((tok) => {
+          const parentEv = nameToEvent.get(tok);
+          if (parentEv && parentEv.id !== ev.id) {
+            maxParentDepth = Math.max(maxParentDepth, getDepth(parentEv));
+          }
+        });
+      });
+
+      visiting.delete(key);
+      const d = maxParentDepth + 1;
+      depthMemo.set(key, d);
+      return d;
+    };
+
+    const columns = new Map<number, StoryEvent[]>();
+    filteredEvents.forEach((ev) => {
+      const d = Math.min(12, getDepth(ev));
+      const list = columns.get(d) || [];
+      list.push(ev);
+      columns.set(d, list);
+    });
+
+    const nodes: {
+      ev: StoryEvent;
+      x: number;
+      y: number;
+      col: number;
+      row: number;
+    }[] = [];
+    const posById = new Map<string, { x: number; y: number }>();
+
+    let maxCols = 0;
+    let maxRows = 0;
+    Array.from(columns.keys())
+      .sort((a, b) => a - b)
+      .forEach((colIdx) => {
+        const colEvents = columns.get(colIdx) || [];
+        maxCols = Math.max(maxCols, colIdx + 1);
+        maxRows = Math.max(maxRows, colEvents.length);
+        colEvents.forEach((ev, rowIdx) => {
+          const x = 40 + colIdx * colGap;
+          const y = 48 + rowIdx * rowGap;
+          nodes.push({ ev, x, y, col: colIdx, row: rowIdx });
+          posById.set(ev.id, { x, y });
+        });
+      });
+
+    const edges: {
+      id: string;
+      fromId: string;
+      toId: string;
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      kind: 'prereq' | 'control';
+    }[] = [];
+
+    filteredEvents.forEach((ev) => {
+      const targetPos = posById.get(ev.id);
+      if (!targetPos) return;
+
+      ev.prereqs.forEach((pr) => {
+        const tokens = pr
+          .split(/[,;\s]+/)
+          .map((s) => s.trim().toLowerCase())
+          .filter(Boolean);
+        tokens.forEach((tok) => {
+          const parentEv = nameToEvent.get(tok);
+          if (parentEv) {
+            const srcPos = posById.get(parentEv.id);
+            if (srcPos) {
+              edges.push({
+                id: `edge_${parentEv.id}_${ev.id}`,
+                fromId: parentEv.id,
+                toId: ev.id,
+                x1: srcPos.x + nodeWidth,
+                y1: srcPos.y + nodeHeight / 2,
+                x2: targetPos.x,
+                y2: targetPos.y + nodeHeight / 2,
+                kind: 'prereq'
+              });
+            }
+          }
+        });
+      });
+
+      if (
+        (ev.rewardType === 'ENABLE_EVENT' || ev.rewardType === 'DISABLE_EVENT') &&
+        ev.rewardParams[0]?.trim()
+      ) {
+        const ctrlTarget = nameToEvent.get(ev.rewardParams[0].trim().toLowerCase());
+        if (ctrlTarget) {
+          const dstPos = posById.get(ctrlTarget.id);
+          if (dstPos) {
+            edges.push({
+              id: `ctrl_${ev.id}_${ctrlTarget.id}`,
+              fromId: ev.id,
+              toId: ctrlTarget.id,
+              x1: targetPos.x + nodeWidth,
+              y1: targetPos.y + nodeHeight / 2,
+              x2: dstPos.x,
+              y2: dstPos.y + nodeHeight / 2,
+              kind: 'control'
+            });
+          }
+        }
+      }
+    });
+
+    const width = Math.max(920, maxCols * colGap + 120);
+    const height = Math.max(520, maxRows * rowGap + 100);
+
+    return { nodes, edges, width, height, nodeWidth, nodeHeight, maxCols };
+  }, [filteredEvents]);
+
   return (
     <div className="flex-1 flex flex-col bg-slate-950 text-cyan-50 overflow-hidden select-none">
       {/* Smart Autocomplete Datalists */}
@@ -1365,7 +1507,7 @@ export default function StoryEditor({
                 {t.storyEditor.title}
               </span>
               <span className="px-1.5 py-0.5 rounded-sm bg-indigo-950/90 border border-indigo-500/40 text-[9px] font-mono font-bold text-indigo-300 uppercase tracking-wider">
-                v2.1
+                v2.2
               </span>
               <span className="bg-slate-950 text-indigo-300 border border-slate-800 px-2 py-0.5 rounded-sm text-[9px] font-mono">
                 {events.length} {t.storyEditor.eventsCount}
@@ -1463,6 +1605,17 @@ export default function StoryEditor({
           >
             <GitBranch className="w-3 h-3" />
             <span>{tr(lang, 'Flow & Chain', 'Flujo y Cadena', 'Flux & Chaîne')}</span>
+          </button>
+          <button
+            onClick={() => setViewMode('graph')}
+            className={`flex items-center space-x-1.5 px-3 py-1 rounded-sm text-[10px] font-mono uppercase tracking-wider transition-colors cursor-pointer ${
+              viewMode === 'graph'
+                ? 'bg-emerald-600 text-white font-bold'
+                : 'text-slate-400 hover:text-emerald-300'
+            }`}
+          >
+            <Layers className="w-3 h-3" />
+            <span>{tr(lang, '2D Node Graph', 'Grafo Nodal 2D', 'Graphe Nodal 2D')}</span>
           </button>
           <button
             onClick={() => setViewMode('xml')}
@@ -2483,6 +2636,167 @@ export default function StoryEditor({
                 </div>
               </div>
             )
+          ) : viewMode === 'graph' ? (
+            /* 2D INTERACTIVE NODAL DAG GRAPH (v2.2) */
+            <div className="flex-1 flex flex-col min-h-[540px] space-y-3">
+              <div className="bg-slate-900/70 border border-emerald-900/50 p-3 rounded-sm flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-emerald-300">
+                    {tr(
+                      lang,
+                      '2D Story Event Dependency Graph (v2.2)',
+                      'Grafo Nodal 2D de Eventos y Prerrequisitos (v2.2)',
+                      'Graphe Nodal 2D des Événements (v2.2)'
+                    )}
+                  </h3>
+                  <p className="text-[11px] font-mono text-slate-400">
+                    {storyGraphLayout.nodes.length} {tr(lang, 'Nodes', 'Nodos', 'Nœuds')} ·{' '}
+                    {storyGraphLayout.edges.length} {tr(lang, 'Connections', 'Conexiones', 'Connexions')} ·{' '}
+                    {storyGraphLayout.maxCols} {tr(lang, 'Topological Tiers', 'Niveles Jerárquicos', 'Niveaux')}
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-2 font-mono text-xs">
+                  <button
+                    onClick={() => setGraphZoom((z) => Math.max(0.55, Number((z - 0.15).toFixed(2))))}
+                    className="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-700 rounded-sm text-slate-200 cursor-pointer"
+                  >
+                    - Zoom
+                  </button>
+                  <span className="text-[11px] text-emerald-300 tabular-nums px-2">
+                    {Math.round(graphZoom * 100)}%
+                  </span>
+                  <button
+                    onClick={() => setGraphZoom((z) => Math.min(1.5, Number((z + 0.15).toFixed(2))))}
+                    className="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-700 rounded-sm text-slate-200 cursor-pointer"
+                  >
+                    + Zoom
+                  </button>
+                  <button
+                    onClick={() => setGraphZoom(1)}
+                    className="px-2.5 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-700 rounded-sm text-slate-400 cursor-pointer"
+                  >
+                    100%
+                  </button>
+                  {selectedEvent && (
+                    <button
+                      onClick={() => setViewMode('params')}
+                      className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-[10px] uppercase font-bold cursor-pointer"
+                    >
+                      {tr(lang, `Edit ${selectedEvent.name}`, `Editar ${selectedEvent.name}`, `Éditer ${selectedEvent.name}`)}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex-1 bg-slate-950 border border-slate-800 rounded-sm overflow-auto custom-scrollbar relative">
+                <svg
+                  width={storyGraphLayout.width * graphZoom}
+                  height={storyGraphLayout.height * graphZoom}
+                  viewBox={`0 0 ${storyGraphLayout.width} ${storyGraphLayout.height}`}
+                  className="block"
+                >
+                  <defs>
+                    <pattern id="storyGrid" width="32" height="32" patternUnits="userSpaceOnUse">
+                      <path d="M 32 0 L 0 0 0 32" fill="none" stroke="#0f172a" strokeWidth="1" />
+                    </pattern>
+                  </defs>
+                  <rect width={storyGraphLayout.width} height={storyGraphLayout.height} fill="url(#storyGrid)" />
+
+                  {/* Column Tier Headers */}
+                  {Array.from({ length: storyGraphLayout.maxCols }).map((_, colIdx) => (
+                    <g key={`tier_${colIdx}`}>
+                      <text
+                        x={40 + colIdx * 290 + storyGraphLayout.nodeWidth / 2}
+                        y={26}
+                        textAnchor="middle"
+                        fill="#64748b"
+                        fontFamily="monospace"
+                        fontSize="10"
+                        fontWeight="bold"
+                      >
+                        {colIdx === 0
+                          ? tr(lang, 'TIER 0 // ROOT TRIGGERS', 'NIVEL 0 // EVENTOS RAÍZ', 'NIVEAU 0 // RACINES')
+                          : `TIER ${colIdx} // STEP +${colIdx}`}
+                      </text>
+                    </g>
+                  ))}
+
+                  {/* Bézier Dependency Edges */}
+                  {storyGraphLayout.edges.map((edge) => {
+                    const isHighlighted =
+                      selectedEvent && (edge.fromId === selectedEvent.id || edge.toId === selectedEvent.id);
+                    const dx = Math.max(60, Math.abs(edge.x2 - edge.x1) * 0.5);
+                    const pathData = `M ${edge.x1} ${edge.y1} C ${edge.x1 + dx} ${edge.y1}, ${edge.x2 - dx} ${edge.y2}, ${edge.x2} ${edge.y2}`;
+                    const strokeColor =
+                      edge.kind === 'control'
+                        ? isHighlighted
+                          ? '#22d3ee'
+                          : '#0e7490'
+                        : isHighlighted
+                        ? '#34d399'
+                        : '#334155';
+
+                    return (
+                      <path
+                        key={edge.id}
+                        d={pathData}
+                        fill="none"
+                        stroke={strokeColor}
+                        strokeWidth={isHighlighted ? 2.6 : 1.5}
+                        strokeDasharray={edge.kind === 'control' ? '5,4' : undefined}
+                      />
+                    );
+                  })}
+
+                  {/* Event Nodes */}
+                  {storyGraphLayout.nodes.map(({ ev, x, y }) => {
+                    const isSel = selectedEvent?.id === ev.id;
+                    const stroke = isSel ? '#34d399' : ev.active === false ? '#f43f5e' : '#4f46e5';
+                    const bg = isSel ? '#064e3b' : '#0f172a';
+
+                    return (
+                      <g
+                        key={ev.id}
+                        transform={`translate(${x}, ${y})`}
+                        onClick={() => setSelectedEvent(ev)}
+                        className="cursor-pointer"
+                      >
+                        <rect
+                          width={storyGraphLayout.nodeWidth}
+                          height={storyGraphLayout.nodeHeight}
+                          rx={4}
+                          fill={bg}
+                          stroke={stroke}
+                          strokeWidth={isSel ? 2.4 : 1.2}
+                        />
+                        <text
+                          x={10}
+                          y={20}
+                          fill="#f8fafc"
+                          fontFamily="monospace"
+                          fontSize="11"
+                          fontWeight="bold"
+                        >
+                          {ev.name.length > 25 ? `${ev.name.slice(0, 24)}…` : ev.name}
+                        </text>
+                        <text x={10} y={38} fill="#818cf8" fontFamily="monospace" fontSize="9.5">
+                          TRG: {ev.eventType || 'NONE'}
+                        </text>
+                        <text x={10} y={54} fill="#34d399" fontFamily="monospace" fontSize="9.5">
+                          RWD: {ev.rewardType || 'NONE'}
+                        </text>
+                        {ev.branch && (
+                          <text x={10} y={68} fill="#38bdf8" fontFamily="monospace" fontSize="8.5">
+                            Branch: {ev.branch}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+            </div>
           ) : viewMode === 'flow' ? (
             /* FLOW & CHAIN VISUALIZER + DIAGNOSTICS AUDITOR */
             <div className="max-w-5xl space-y-6 pb-12">

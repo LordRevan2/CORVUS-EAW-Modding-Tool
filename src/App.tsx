@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import packageJson from '../package.json';
-import { Upload, Download, Moon, AlertTriangle, Database, XCircle, Route, Globe, BookOpen, FileText, Settings as SettingsIcon, RefreshCw, Folder, Code, Shield } from 'lucide-react';
+import { Upload, Download, Moon, AlertTriangle, Database, XCircle, Route, Globe, BookOpen, FileText, Settings as SettingsIcon, RefreshCw, Folder, Code, Shield, Flame, ShieldAlert, GitBranch, Volume2, Undo2, Redo2, History, RotateCcw } from 'lucide-react';
 import { Planet, TradeRoute, AppSettings, StoryEvent, Campaign } from './types';
 import { parsePlanetsXml, parseTradeRoutesXml, serializeXml, updatePlanetPositionInDoc, parseStoryXml, parseCampaignsXml, updateCampaignInDoc, createSampleCampaignsXml, parseCampaignElement, createSampleStoryXml } from './lib/xml';
 import PlanetList from './components/PlanetList';
@@ -20,13 +20,30 @@ import StoryEditor from './components/StoryEditor';
 import XmlEditor, { CodeEditorWithLines } from './components/XmlEditor';
 import LuaEditor from './components/LuaEditor';
 import UpdaterUI from './components/UpdaterUI';
-import UnitEditor from './components/UnitEditor';
+import UnitEditor, { createSampleUnitsXmlString } from './components/UnitEditor';
+import HardPointEditor, { createSampleHardPointsXmlString } from './components/HardPointEditor';
+import TechTreeEditor, { createSampleTechTreeAndFactionsXmlString } from './components/TechTreeEditor';
+import SfxEditor, { createSampleSfxEventsXmlString } from './components/SfxEditor';
+import ModValidatorModal from './components/ModValidatorModal';
 import DialogEditor from './components/DialogEditor';
 import ErrorModal, { AppErrorType } from './components/ErrorModal';
 import { parseDatFile, DatRecord } from './lib/dat';
 import { parseMtd, MtdIcon } from './lib/mtd';
 import { fileToImageUrl, findGalaxyBackgroundImage } from './lib/imageUtils';
 import { I18nProvider, useTranslation, useLanguage, tr } from './i18n';
+
+interface GalaxyHistoryEntry {
+  id: string;
+  timestamp: number;
+  label: string;
+  coalesceKey?: string;
+  planetsXml: string | null;
+  routesXml: string | null;
+  campaignsXml: string | null;
+  selectedPlanetName: string | null;
+  selectedRouteName: string | null;
+  selectedCampaignName: string | null;
+}
 
 function AppContent({ settings, setSettings }: { settings: AppSettings, setSettings: (s: AppSettings) => void }) {
   const t = useTranslation();
@@ -46,6 +63,13 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
   const [hideExcludedInPreview, setHideExcludedInPreview] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'planets' | 'routes' | 'campaigns'>('planets');
   const [error, setError] = useState<AppErrorType>(null);
+
+  // XML Undo/Redo History & Node-level Baseline Snapshots (Planets v2.7 & Campaigns v3.3)
+  const [galaxyHistory, setGalaxyHistory] = useState<GalaxyHistoryEntry[]>([]);
+  const [galaxyHistoryIndex, setGalaxyHistoryIndex] = useState<number>(-1);
+  const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
+  const [baselinePlanetXmlMap, setBaselinePlanetXmlMap] = useState<Record<string, string>>({});
+  const [baselineCampaignXmlMap, setBaselineCampaignXmlMap] = useState<Record<string, string>>({});
 
   const [planetToolMode, setPlanetToolMode] = useState<'visual' | 'code'>('visual');
   const [planetXmlCode, setPlanetXmlCode] = useState<string>('');
@@ -86,6 +110,14 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
   const [unitDoc, setUnitDoc] = useState<XMLDocument | null>(null);
   const [unitFileName, setUnitFileName] = useState<string>('Units.xml');
 
+  const [hardPointDoc, setHardPointDoc] = useState<XMLDocument | null>(null);
+  const [hardPointFileName, setHardPointFileName] = useState<string>('HardPoints.xml');
+  const [techTreeDoc, setTechTreeDoc] = useState<XMLDocument | null>(null);
+  const [techTreeFileName, setTechTreeFileName] = useState<string>('TechTree_Factions.xml');
+  const [sfxDoc, setSfxDoc] = useState<XMLDocument | null>(null);
+  const [sfxFileName, setSfxFileName] = useState<string>('SFXEvents.xml');
+  const [isModValidatorOpen, setIsModValidatorOpen] = useState<boolean>(false);
+
   const [activeDialogContent, setActiveDialogContent] = useState<string | null>(null);
   const [activeDialogFileName, setActiveDialogFileName] = useState<string>('Story_Campaign_Dialogs.txt');
   const dialogFileInputRef = useRef<HTMLInputElement>(null);
@@ -108,6 +140,9 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
   const xmlFileInputRef = useRef<HTMLInputElement>(null);
   const luaFileInputRef = useRef<HTMLInputElement>(null);
   const unitFileInputRef = useRef<HTMLInputElement>(null);
+  const hardPointFileInputRef = useRef<HTMLInputElement>(null);
+  const techTreeFileInputRef = useRef<HTMLInputElement>(null);
+  const sfxFileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   
   const lang = useLanguage();
@@ -144,6 +179,195 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
             reader.readAsArrayBuffer(file);
         });
     };
+
+  const capturePlanetBaselines = useCallback((planetList: Planet[]) => {
+    const serializer = new XMLSerializer();
+    const map: Record<string, string> = {};
+    planetList.forEach(p => {
+      if (p.el) {
+        map[p.name.toLowerCase()] = serializer.serializeToString(p.el);
+      }
+    });
+    setBaselinePlanetXmlMap(map);
+  }, []);
+
+  const captureCampaignBaselines = useCallback((campaignList: Campaign[]) => {
+    const serializer = new XMLSerializer();
+    const map: Record<string, string> = {};
+    campaignList.forEach(c => {
+      if (c.el) {
+        map[c.name.toLowerCase()] = serializer.serializeToString(c.el);
+      }
+    });
+    setBaselineCampaignXmlMap(map);
+  }, []);
+
+  const pushGalaxySnapshot = useCallback((
+    params: {
+      pDoc?: XMLDocument | null;
+      rDoc?: XMLDocument | null;
+      cDoc?: XMLDocument | null;
+      label: string;
+      coalesceKey?: string;
+      selPlanetName?: string | null;
+      selRouteName?: string | null;
+      selCampName?: string | null;
+      resetStack?: boolean;
+    }
+  ) => {
+    const pDocToUse = params.pDoc !== undefined ? params.pDoc : xmlDoc;
+    const rDocToUse = params.rDoc !== undefined ? params.rDoc : tradeRoutesXmlDoc;
+    const cDocToUse = params.cDoc !== undefined ? params.cDoc : campaignsXmlDoc;
+
+    const entry: GalaxyHistoryEntry = {
+      id: `hist_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      timestamp: Date.now(),
+      label: params.label,
+      coalesceKey: params.coalesceKey,
+      planetsXml: pDocToUse ? serializeXml(pDocToUse) : null,
+      routesXml: rDocToUse ? serializeXml(rDocToUse) : null,
+      campaignsXml: cDocToUse ? serializeXml(cDocToUse) : null,
+      selectedPlanetName: params.selPlanetName !== undefined ? params.selPlanetName : (selectedPlanet?.name || null),
+      selectedRouteName: params.selRouteName !== undefined ? params.selRouteName : (selectedRoute?.name || null),
+      selectedCampaignName: params.selCampName !== undefined ? params.selCampName : (selectedCampaign?.name || null),
+    };
+
+    if (params.resetStack) {
+      setGalaxyHistory([entry]);
+      setGalaxyHistoryIndex(0);
+      return;
+    }
+
+    setGalaxyHistory(prev => {
+      const sliced = prev.slice(0, galaxyHistoryIndex + 1);
+      const currentTip = sliced[sliced.length - 1];
+      if (
+        params.coalesceKey &&
+        currentTip &&
+        currentTip.coalesceKey === params.coalesceKey &&
+        entry.timestamp - currentTip.timestamp < 2500
+      ) {
+        const updatedStack = [...sliced];
+        updatedStack[updatedStack.length - 1] = {
+          ...entry,
+          id: currentTip.id,
+        };
+        return updatedStack;
+      }
+      const nextStack = [...sliced, entry].slice(-60);
+      setGalaxyHistoryIndex(nextStack.length - 1);
+      return nextStack;
+    });
+  }, [xmlDoc, tradeRoutesXmlDoc, campaignsXmlDoc, selectedPlanet, selectedRoute, selectedCampaign, galaxyHistoryIndex]);
+
+  const applyGalaxyHistoryEntry = useCallback((entry: GalaxyHistoryEntry) => {
+    if (entry.planetsXml) {
+      try {
+        const parsedP = parsePlanetsXml(entry.planetsXml);
+        setXmlDoc(parsedP.doc);
+        setPlanets(parsedP.planets);
+        if (entry.selectedPlanetName) {
+          const foundP = parsedP.planets.find(p => p.name.toLowerCase() === entry.selectedPlanetName!.toLowerCase());
+          setSelectedPlanet(foundP || null);
+        } else {
+          setSelectedPlanet(null);
+        }
+      } catch (e) {
+        console.warn('Undo/Redo planets parse warning:', e);
+      }
+    }
+
+    if (entry.routesXml) {
+      try {
+        const parsedR = parseTradeRoutesXml(entry.routesXml);
+        setTradeRoutesXmlDoc(parsedR.doc);
+        setTradeRoutes(parsedR.tradeRoutes);
+        if (entry.selectedRouteName) {
+          const foundR = parsedR.tradeRoutes.find(r => r.name.toLowerCase() === entry.selectedRouteName!.toLowerCase());
+          setSelectedRoute(foundR || null);
+        } else {
+          setSelectedRoute(null);
+        }
+      } catch (e) {
+        console.warn('Undo/Redo routes parse warning:', e);
+      }
+    }
+
+    if (entry.campaignsXml) {
+      try {
+        const parsedC = parseCampaignsXml(entry.campaignsXml);
+        setCampaignsXmlDoc(parsedC.doc);
+        setCampaigns(parsedC.campaigns);
+        if (entry.selectedCampaignName) {
+          const foundC = parsedC.campaigns.find(c => c.name.toLowerCase() === entry.selectedCampaignName!.toLowerCase());
+          setSelectedCampaign(foundC || parsedC.campaigns[0] || null);
+        } else {
+          setSelectedCampaign(parsedC.campaigns[0] || null);
+        }
+      } catch (e) {
+        console.warn('Undo/Redo campaigns parse warning:', e);
+      }
+    }
+  }, []);
+
+  const canUndoGalaxy = galaxyHistoryIndex > 0;
+  const canRedoGalaxy = galaxyHistoryIndex >= 0 && galaxyHistoryIndex < galaxyHistory.length - 1;
+
+  const handleGalaxyUndo = useCallback(() => {
+    if (galaxyHistoryIndex <= 0) return;
+    const nextIdx = galaxyHistoryIndex - 1;
+    const targetEntry = galaxyHistory[nextIdx];
+    if (targetEntry) {
+      setGalaxyHistoryIndex(nextIdx);
+      applyGalaxyHistoryEntry(targetEntry);
+    }
+  }, [galaxyHistory, galaxyHistoryIndex, applyGalaxyHistoryEntry]);
+
+  const handleGalaxyRedo = useCallback(() => {
+    if (galaxyHistoryIndex < 0 || galaxyHistoryIndex >= galaxyHistory.length - 1) return;
+    const nextIdx = galaxyHistoryIndex + 1;
+    const targetEntry = galaxyHistory[nextIdx];
+    if (targetEntry) {
+      setGalaxyHistoryIndex(nextIdx);
+      applyGalaxyHistoryEntry(targetEntry);
+    }
+  }, [galaxyHistory, galaxyHistoryIndex, applyGalaxyHistoryEntry]);
+
+  const handleJumpToGalaxyHistory = (idx: number) => {
+    if (idx < 0 || idx >= galaxyHistory.length) return;
+    const targetEntry = galaxyHistory[idx];
+    if (targetEntry) {
+      setGalaxyHistoryIndex(idx);
+      applyGalaxyHistoryEntry(targetEntry);
+      setIsHistoryOpen(false);
+    }
+  };
+
+  // Global keyboard shortcuts Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z for Galaxy & Campaign XML Editor
+  useEffect(() => {
+    if (!xmlDoc || planetToolMode !== 'visual') return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+      if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+        if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
+          if (canUndoGalaxy) {
+            e.preventDefault();
+            handleGalaxyUndo();
+          }
+        } else if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) {
+          if (canRedoGalaxy) {
+            e.preventDefault();
+            handleGalaxyRedo();
+          }
+        } else if (isInput) {
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [xmlDoc, planetToolMode, canUndoGalaxy, canRedoGalaxy, handleGalaxyUndo, handleGalaxyRedo]);
 
   const ensureGalaxyLoadedForCampaigns = async () => {
     if (xmlDoc && planets.length > 0) return { loadedPlanets: planets, loadedRoutes: tradeRoutes };
@@ -247,6 +471,9 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
       || workspaceFiles.find(f => f.name.toLowerCase().includes('route') && f.name.toLowerCase().endsWith('.xml'));
     let campaignsFile = workspaceFiles.find(f => f.name.toLowerCase() === 'campaigns.xml')
       || workspaceFiles.find(f => f.name.toLowerCase().includes('campaign') && f.name.toLowerCase().endsWith('.xml'));
+    let pDocLoaded: XMLDocument | null = null;
+    let rDocLoaded: XMLDocument | null = null;
+    let cDocLoaded: XMLDocument | null = null;
     
     try {
       if (planetsFile) {
@@ -255,12 +482,15 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
         setXmlDoc(parsed.doc);
         setPlanets(parsed.planets);
         setSelectedPlanet(null);
+        capturePlanetBaselines(parsed.planets);
+        pDocLoaded = parsed.doc;
       }
       if (routesFile) {
         const content = await readFileAsText(routesFile);
         const parsed = parseTradeRoutesXml(content);
         setTradeRoutesXmlDoc(parsed.doc);
         setTradeRoutes(parsed.tradeRoutes);
+        rDocLoaded = parsed.doc;
       }
       if (campaignsFile) {
         const content = await readFileAsText(campaignsFile);
@@ -269,6 +499,17 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
         setCampaigns(parsed.campaigns);
         setSelectedCampaign(parsed.campaigns[0] || null);
         setCampaignFileName(campaignsFile.name);
+        captureCampaignBaselines(parsed.campaigns);
+        cDocLoaded = parsed.doc;
+      }
+      if (pDocLoaded || rDocLoaded || cDocLoaded) {
+        pushGalaxySnapshot({
+          pDoc: pDocLoaded || xmlDoc,
+          rDoc: rDocLoaded || tradeRoutesXmlDoc,
+          cDoc: cDocLoaded || campaignsXmlDoc,
+          label: tr(lang, 'Initial Workspace XML State', 'Estado Inicial XML (Workspace)', 'État XML Initial (Workspace)'),
+          resetStack: true
+        });
       }
 
       // Auto-detect and load galaxy background texture from workspace (TGA / PNG / JPG)
@@ -348,22 +589,34 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
       setPlanetToolMode('code');
     } else {
       try {
+        let nextPDoc = xmlDoc;
+        let nextRDoc = tradeRoutesXmlDoc;
+        let nextCDoc = campaignsXmlDoc;
         if (xmlDoc) {
            const parsedPlanets = parsePlanetsXml(planetXmlCode);
            setXmlDoc(parsedPlanets.doc);
            setPlanets(parsedPlanets.planets);
+           nextPDoc = parsedPlanets.doc;
         }
         if (tradeRoutesXmlDoc) {
            const parsedRoutes = parseTradeRoutesXml(tradeRoutesXmlCode);
            setTradeRoutesXmlDoc(parsedRoutes.doc);
            setTradeRoutes(parsedRoutes.tradeRoutes);
+           nextRDoc = parsedRoutes.doc;
         }
         if (campaignsXmlDoc && campaignsXmlCode.trim()) {
            const parsedCampaigns = parseCampaignsXml(campaignsXmlCode);
            setCampaignsXmlDoc(parsedCampaigns.doc);
            setCampaigns(parsedCampaigns.campaigns);
            setSelectedCampaign(parsedCampaigns.campaigns[0] || null);
+           nextCDoc = parsedCampaigns.doc;
         }
+        pushGalaxySnapshot({
+          pDoc: nextPDoc,
+          rDoc: nextRDoc,
+          cDoc: nextCDoc,
+          label: tr(lang, 'Edited Raw XML in Code View', 'Edición XML en Vista Código', 'Édition XML en Vue Code')
+        });
         setPlanetToolMode('visual');
       } catch (err: any) {
         setError({
@@ -395,6 +648,13 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
         setXmlDoc(parsed.doc);
         setPlanets(parsed.planets);
         setSelectedPlanet(null);
+        capturePlanetBaselines(parsed.planets);
+        pushGalaxySnapshot({
+          pDoc: parsed.doc,
+          label: `${tr(lang, 'Loaded', 'Cargado', 'Chargé')} ${file.name}`,
+          selPlanetName: null,
+          resetStack: true
+        });
       } catch (err: any) {
         setError(err.message || t.errors.importXml);
       }
@@ -425,6 +685,10 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
         const parsed = parseTradeRoutesXml(content);
         setTradeRoutesXmlDoc(parsed.doc);
         setTradeRoutes(parsed.tradeRoutes);
+        pushGalaxySnapshot({
+          rDoc: parsed.doc,
+          label: `${tr(lang, 'Imported', 'Importado', 'Importé')} ${file.name}`
+        });
       } catch (err: any) {
         setError(err.message || 'Error processing TradeRoutes XML');
       }
@@ -446,6 +710,12 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
       setCampaigns(parsed.campaigns);
       setSelectedCampaign(parsed.campaigns[0] || null);
       setCampaignFileName(campFile.name);
+      captureCampaignBaselines(parsed.campaigns);
+      pushGalaxySnapshot({
+        cDoc: parsed.doc,
+        label: `${tr(lang, 'Loaded', 'Cargado', 'Chargé')} ${campFile.name}`,
+        selCampName: parsed.campaigns[0]?.name || null
+      });
       setActiveTab('campaigns');
     } catch (err: any) {
       setError(err.message || 'Error parsing Campaigns XML');
@@ -473,6 +743,12 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
         setCampaigns(parsed.campaigns);
         setSelectedCampaign(parsed.campaigns[0] || null);
         setCampaignFileName(file.name);
+        captureCampaignBaselines(parsed.campaigns);
+        pushGalaxySnapshot({
+          cDoc: parsed.doc,
+          label: `${tr(lang, 'Imported', 'Importado', 'Importé')} ${file.name}`,
+          selCampName: parsed.campaigns[0]?.name || null
+        });
         setActiveTab('campaigns');
       } catch (err: any) {
         setError(err.message || 'Error processing Campaigns XML');
@@ -494,6 +770,12 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
       setCampaigns(parsed.campaigns);
       setSelectedCampaign(parsed.campaigns[0] || null);
       setCampaignFileName('Campaigns.xml');
+      captureCampaignBaselines(parsed.campaigns);
+      pushGalaxySnapshot({
+        cDoc: parsed.doc,
+        label: tr(lang, 'Created Sample Campaigns.xml', 'Creado Campaigns.xml de ejemplo', 'Créé Campaigns.xml d’exemple'),
+        selCampName: parsed.campaigns[0]?.name || null
+      });
       setActiveTab('campaigns');
     } catch (err: any) {
       setError(err.message || 'Error creating sample Campaigns.xml');
@@ -509,6 +791,12 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
       setCampaignsXmlDoc(parsed.doc);
       setCampaigns(parsed.campaigns);
       setSelectedCampaign(parsed.campaigns[0] || null);
+      captureCampaignBaselines(parsed.campaigns);
+      pushGalaxySnapshot({
+        cDoc: parsed.doc,
+        label: tr(lang, 'Initialized Campaigns.xml', 'Inicializado Campaigns.xml', 'Initialisé Campaigns.xml'),
+        selCampName: parsed.campaigns[0]?.name || null
+      });
       setActiveTab('campaigns');
       return;
     }
@@ -529,6 +817,11 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
     setCampaigns(prev => [...prev, parsedCamp]);
     setSelectedCampaign(parsedCamp);
     setActiveTab('campaigns');
+    pushGalaxySnapshot({
+      cDoc: doc,
+      label: `+<Campaign Name="${parsedCamp.name}">`,
+      selCampName: parsedCamp.name
+    });
   };
 
   const handleDuplicateCampaign = (source: Campaign) => {
@@ -542,13 +835,26 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
     const duplicated = parseCampaignElement(clonedEl);
     setCampaigns(prev => [...prev, duplicated]);
     setSelectedCampaign(duplicated);
+    pushGalaxySnapshot({
+      cDoc: campaignsXmlDoc,
+      label: `${tr(lang, 'Duplicated', 'Duplicada', 'Dupliquée')} <Campaign Name="${newName}">`,
+      selCampName: duplicated.name
+    });
   };
 
-  const handleUpdateCampaign = (updated: Campaign) => {
+  const handleUpdateCampaign = (updated: Campaign, actionMeta?: { label: string; coalesceKey?: string }) => {
     updateCampaignInDoc(updated);
     setCampaigns(prev => prev.map(c => (c.id === updated.id ? updated : c)));
     if (selectedCampaign?.id === updated.id) {
       setSelectedCampaign(updated);
+    }
+    if (campaignsXmlDoc) {
+      pushGalaxySnapshot({
+        cDoc: campaignsXmlDoc,
+        label: actionMeta?.label || `${tr(lang, 'Updated Campaign', 'Campaña actualizada', 'Campagne mise à jour')} ${updated.name}`,
+        coalesceKey: actionMeta?.coalesceKey,
+        selCampName: updated.name
+      });
     }
   };
 
@@ -559,8 +865,16 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
     }
     const remaining = campaigns.filter(c => c.id !== id);
     setCampaigns(remaining);
+    const nextSel = selectedCampaign?.id === id ? (remaining[0] || null) : selectedCampaign;
     if (selectedCampaign?.id === id) {
-      setSelectedCampaign(remaining[0] || null);
+      setSelectedCampaign(nextSel);
+    }
+    if (campaignsXmlDoc && target) {
+      pushGalaxySnapshot({
+        cDoc: campaignsXmlDoc,
+        label: `-<Campaign Name="${target.name}">`,
+        selCampName: nextSel?.name || null
+      });
     }
   };
 
@@ -572,7 +886,10 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
     const nextLocations = exists
       ? selectedCampaign.locations.filter(l => l.toLowerCase() !== planetName.toLowerCase())
       : [...selectedCampaign.locations, planetName];
-    handleUpdateCampaign({ ...selectedCampaign, locations: nextLocations });
+    handleUpdateCampaign(
+      { ...selectedCampaign, locations: nextLocations },
+      { label: `${selectedCampaign.name}: ${exists ? '-' : '+'}<Locations> ${planetName}` }
+    );
   };
 
   const handleCloseProject = () => {
@@ -585,6 +902,9 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
     setCampaigns([]);
     setSelectedCampaign(null);
     setGalaxyBgUrl(null);
+    setGalaxyHistory([]);
+    setGalaxyHistoryIndex(-1);
+    setIsHistoryOpen(false);
     setError(null);
   };
 
@@ -632,6 +952,13 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
       setXmlDoc(parsed.doc);
       setPlanets(parsed.planets);
       setSelectedPlanet(null);
+      capturePlanetBaselines(parsed.planets);
+      pushGalaxySnapshot({
+        pDoc: parsed.doc,
+        label: tr(lang, 'Initialized Empty Planets.xml', 'Planets.xml vacío inicializado', 'Planets.xml vide initialisé'),
+        selPlanetName: null,
+        resetStack: true
+      });
     } catch (err: any) {
       setError(err.message || t.errors.initDb);
     }
@@ -881,6 +1208,114 @@ function AppContent({ settings, setSettings }: { settings: AppSettings, setSetti
     reader.readAsText(file);
     
     if (unitFileInputRef.current) unitFileInputRef.current.value = '';
+  };
+
+  const loadHardPointFromWorkspace = async (path: string) => {
+    const hpFile = workspaceFiles.find(f => f.webkitRelativePath === path || f.name === path);
+    if (!hpFile) return;
+    try {
+      const content = await readFileAsText(hpFile);
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'application/xml');
+      if (doc.querySelector('parsererror')) throw new Error('Invalid XML structure');
+      setHardPointDoc(doc);
+      setHardPointFileName(hpFile.name);
+    } catch (err: any) {
+      setError(err.message || 'Error parsing HardPoints XML');
+    }
+  };
+
+  const handleHardPointUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(content, 'application/xml');
+        if (doc.querySelector('parsererror')) throw new Error('Invalid XML structure');
+        setHardPointDoc(doc);
+        setHardPointFileName(file.name);
+      } catch (err: any) {
+        setError(err.message || 'Error reading HardPoints XML');
+      }
+    };
+    reader.readAsText(file);
+    if (hardPointFileInputRef.current) hardPointFileInputRef.current.value = '';
+  };
+
+  const loadTechTreeFromWorkspace = async (path: string) => {
+    const ttFile = workspaceFiles.find(f => f.webkitRelativePath === path || f.name === path);
+    if (!ttFile) return;
+    try {
+      const content = await readFileAsText(ttFile);
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'application/xml');
+      if (doc.querySelector('parsererror')) throw new Error('Invalid XML structure');
+      setTechTreeDoc(doc);
+      setTechTreeFileName(ttFile.name);
+    } catch (err: any) {
+      setError(err.message || 'Error parsing TechTree / Factions XML');
+    }
+  };
+
+  const handleTechTreeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(content, 'application/xml');
+        if (doc.querySelector('parsererror')) throw new Error('Invalid XML structure');
+        setTechTreeDoc(doc);
+        setTechTreeFileName(file.name);
+      } catch (err: any) {
+        setError(err.message || 'Error reading TechTree / Factions XML');
+      }
+    };
+    reader.readAsText(file);
+    if (techTreeFileInputRef.current) techTreeFileInputRef.current.value = '';
+  };
+
+  const loadSfxFromWorkspace = async (path: string) => {
+    const sfxFile = workspaceFiles.find(f => f.webkitRelativePath === path || f.name === path);
+    if (!sfxFile) return;
+    try {
+      const content = await readFileAsText(sfxFile);
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'application/xml');
+      if (doc.querySelector('parsererror')) throw new Error('Invalid XML structure');
+      setSfxDoc(doc);
+      setSfxFileName(sfxFile.name);
+    } catch (err: any) {
+      setError(err.message || 'Error parsing SFXEvents XML');
+    }
+  };
+
+  const handleSfxUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(content, 'application/xml');
+        if (doc.querySelector('parsererror')) throw new Error('Invalid XML structure');
+        setSfxDoc(doc);
+        setSfxFileName(file.name);
+      } catch (err: any) {
+        setError(err.message || 'Error reading SFXEvents XML');
+      }
+    };
+    reader.readAsText(file);
+    if (sfxFileInputRef.current) sfxFileInputRef.current.value = '';
   };
 
   const handleXmlUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1161,9 +1596,18 @@ end
     
     setPlanets([...planets, newPlanet]);
     setSelectedPlanet(newPlanet);
+    pushGalaxySnapshot({
+      pDoc: xmlDoc,
+      label: `+<Planet Name="${newPlanet.name}">`,
+      selPlanetName: newPlanet.name
+    });
   };
 
-  const handleUpdatePlanet = (updatedPlanet: Planet, nodeUpdates?: { tagName: string, value: string }[]) => {
+  const handleUpdatePlanet = (
+    updatedPlanet: Planet,
+    nodeUpdates?: { tagName: string; value: string }[],
+    actionMeta?: { label: string; coalesceKey?: string }
+  ) => {
     // 1. Update React state
     setPlanets(prev => prev.map(p => p.id === updatedPlanet.id ? updatedPlanet : p));
     if (selectedPlanet?.id === updatedPlanet.id) {
@@ -1182,6 +1626,16 @@ end
         }
       });
     }
+
+    // 4. Record XML Undo/Redo Snapshot
+    if (xmlDoc) {
+      pushGalaxySnapshot({
+        pDoc: xmlDoc,
+        label: actionMeta?.label || `${updatedPlanet.name}: XML Update`,
+        coalesceKey: actionMeta?.coalesceKey,
+        selPlanetName: updatedPlanet.name
+      });
+    }
   };
 
   const handleDeletePlanet = (id: string) => {
@@ -1192,6 +1646,87 @@ end
     setPlanets(prev => prev.filter(p => p.id !== id));
     if (selectedPlanet?.id === id) {
       setSelectedPlanet(null);
+    }
+    if (xmlDoc && planetToDelete) {
+      pushGalaxySnapshot({
+        pDoc: xmlDoc,
+        label: `-<Planet Name="${planetToDelete.name}">`,
+        selPlanetName: null
+      });
+    }
+  };
+
+  const canRevertSelectedPlanetNode = (() => {
+    if (!selectedPlanet || !selectedPlanet.el) return false;
+    const baseXml = baselinePlanetXmlMap[selectedPlanet.name.toLowerCase()];
+    if (!baseXml) return false;
+    const currentXml = new XMLSerializer().serializeToString(selectedPlanet.el);
+    return currentXml !== baseXml;
+  })();
+
+  const handleRevertSelectedPlanetNode = () => {
+    if (!selectedPlanet || !xmlDoc) return;
+    const baseXml = baselinePlanetXmlMap[selectedPlanet.name.toLowerCase()];
+    if (!baseXml) return;
+    try {
+      const parser = new DOMParser();
+      const snippetDoc = parser.parseFromString(baseXml, 'application/xml');
+      const restoredEl = snippetDoc.documentElement;
+      if (!restoredEl || restoredEl.querySelector('parsererror')) return;
+
+      const importedNode = xmlDoc.importNode(restoredEl, true);
+      if (selectedPlanet.el.parentNode) {
+        selectedPlanet.el.parentNode.replaceChild(importedNode, selectedPlanet.el);
+      }
+      const reparsed = parsePlanetsXml(serializeXml(xmlDoc));
+      setXmlDoc(reparsed.doc);
+      setPlanets(reparsed.planets);
+      const restoredPlanet = reparsed.planets.find(p => p.name.toLowerCase() === selectedPlanet.name.toLowerCase()) || null;
+      setSelectedPlanet(restoredPlanet);
+      pushGalaxySnapshot({
+        pDoc: reparsed.doc,
+        label: `${tr(lang, 'Reverted', 'Revertido', 'Rétabli')} <Planet Name="${selectedPlanet.name}">`,
+        selPlanetName: restoredPlanet?.name || null
+      });
+    } catch (e) {
+      console.warn('Error reverting planet node:', e);
+    }
+  };
+
+  const canRevertSelectedCampaignNode = (() => {
+    if (!selectedCampaign || !selectedCampaign.el) return false;
+    const baseXml = baselineCampaignXmlMap[selectedCampaign.name.toLowerCase()];
+    if (!baseXml) return false;
+    const currentXml = new XMLSerializer().serializeToString(selectedCampaign.el);
+    return currentXml !== baseXml;
+  })();
+
+  const handleRevertSelectedCampaignNode = () => {
+    if (!selectedCampaign || !campaignsXmlDoc) return;
+    const baseXml = baselineCampaignXmlMap[selectedCampaign.name.toLowerCase()];
+    if (!baseXml) return;
+    try {
+      const parser = new DOMParser();
+      const snippetDoc = parser.parseFromString(baseXml, 'application/xml');
+      const restoredEl = snippetDoc.documentElement;
+      if (!restoredEl || restoredEl.querySelector('parsererror')) return;
+
+      const importedNode = campaignsXmlDoc.importNode(restoredEl, true);
+      if (selectedCampaign.el.parentNode) {
+        selectedCampaign.el.parentNode.replaceChild(importedNode, selectedCampaign.el);
+      }
+      const reparsed = parseCampaignsXml(serializeXml(campaignsXmlDoc));
+      setCampaignsXmlDoc(reparsed.doc);
+      setCampaigns(reparsed.campaigns);
+      const restoredCamp = reparsed.campaigns.find(c => c.name.toLowerCase() === selectedCampaign.name.toLowerCase()) || reparsed.campaigns[0] || null;
+      setSelectedCampaign(restoredCamp);
+      pushGalaxySnapshot({
+        cDoc: reparsed.doc,
+        label: `${tr(lang, 'Reverted', 'Revertido', 'Rétabli')} <Campaign Name="${selectedCampaign.name}">`,
+        selCampName: restoredCamp?.name || null
+      });
+    } catch (e) {
+      console.warn('Error reverting campaign node:', e);
     }
   };
 
@@ -1224,6 +1759,48 @@ end
     setSelectedRoute(newRoute);
     setSelectedPlanet(null);
     setActiveTab('routes');
+    pushGalaxySnapshot({
+      rDoc: tradeRoutesXmlDoc,
+      label: `+<TradeRoute Name="${newRoute.name}">`,
+      selRouteName: newRoute.name
+    });
+  };
+
+  const handleQuickCreateRoute = (pointA: string, pointB: string) => {
+    let docToUse = tradeRoutesXmlDoc;
+    if (!docToUse) {
+      const parser = new DOMParser();
+      docToUse = parser.parseFromString('<?xml version="1.0" encoding="utf-8"?>\n<TradeRoutes>\n</TradeRoutes>', 'application/xml');
+      setTradeRoutesXmlDoc(docToUse);
+    }
+    const routeName = `Route_${pointA}_${pointB}`;
+    const newRouteNode = docToUse.createElement("TradeRoute");
+    newRouteNode.setAttribute("Name", routeName);
+
+    const posA = docToUse.createElement("Point_A");
+    posA.textContent = pointA;
+    newRouteNode.appendChild(posA);
+
+    const posB = docToUse.createElement("Point_B");
+    posB.textContent = pointB;
+    newRouteNode.appendChild(posB);
+
+    const root = docToUse.querySelector("TradeRoutes") || docToUse.documentElement;
+    root.appendChild(newRouteNode);
+
+    const newRoute: TradeRoute = {
+      id: `tr_auto_${Date.now()}`,
+      el: newRouteNode,
+      name: routeName,
+      pointA,
+      pointB
+    };
+    setTradeRoutes(prev => [...prev, newRoute]);
+    pushGalaxySnapshot({
+      rDoc: docToUse,
+      label: `+<TradeRoute Name="${routeName}"> (${pointA} ↔ ${pointB})`,
+      selRouteName: routeName
+    });
   };
 
   const handleUpdateTradeRoute = (updatedRoute: TradeRoute, nodeUpdates?: { tagName: string, value: string }[]) => {
@@ -1244,6 +1821,14 @@ end
         }
       });
     }
+    if (tradeRoutesXmlDoc) {
+      pushGalaxySnapshot({
+        rDoc: tradeRoutesXmlDoc,
+        label: `<TradeRoute Name="${updatedRoute.name}">`,
+        coalesceKey: `route_${updatedRoute.id}`,
+        selRouteName: updatedRoute.name
+      });
+    }
   };
 
   const handleDeleteTradeRoute = (id: string) => {
@@ -1254,6 +1839,13 @@ end
     setTradeRoutes(prev => prev.filter(r => r.id !== id));
     if (selectedRoute?.id === id) {
       setSelectedRoute(null);
+    }
+    if (tradeRoutesXmlDoc && routeToDelete) {
+      pushGalaxySnapshot({
+        rDoc: tradeRoutesXmlDoc,
+        label: `-<TradeRoute Name="${routeToDelete.name}">`,
+        selRouteName: null
+      });
     }
   };
 
@@ -1280,6 +1872,10 @@ end
       const refreshed = updatedPlanets.find(p => p.id === selectedPlanet.id);
       setSelectedPlanet(refreshed || null);
     }
+    pushGalaxySnapshot({
+      pDoc: xmlDoc,
+      label: `Bulk XML: <${tagName}> = ${value} (${planets.length - excludedIds.size} planetas)`
+    });
   };
 
   return (
@@ -1294,11 +1890,11 @@ end
             <h1 className="text-lg font-bold tracking-widest uppercase italic">CORVUS <span className="font-extralight opacity-60">// EAW Modding Tool</span></h1>
             
             <div className="flex items-center gap-1 my-auto">
-              <div className="relative overflow-hidden px-2 py-0.5 border border-amber-400/80 bg-gradient-to-b from-slate-200/25 via-slate-300/15 to-slate-400/20 shadow-[0_0_10px_rgba(251,191,36,0.25)] rounded flex items-center group cursor-default">
-                <span className="text-[10px] font-mono font-bold tracking-widest text-slate-200 drop-shadow-[0_0_8px_rgba(226,232,240,0.6)] z-10">
-                  v{packageJson.version}
+              <div className="relative overflow-hidden px-2.5 py-0.5 border border-amber-400/90 bg-gradient-to-r from-purple-950/95 via-purple-700/70 to-fuchsia-950/95 shadow-[0_0_14px_rgba(168,85,247,0.45),0_0_6px_rgba(251,191,36,0.3)] rounded flex items-center gap-1.5 group cursor-default">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-purple-100 drop-shadow-[0_0_8px_rgba(216,180,254,0.65)] z-10 whitespace-nowrap">
+                  v{packageJson.version} <span className="text-amber-300 font-black">// REVAN</span>
                 </span>
-                <div className="absolute inset-0 w-8 h-full bg-white/30 skew-x-[-15deg] blur-[2px] animate-shine z-0 pointer-events-none"></div>
+                <div className="absolute inset-0 w-8 h-full bg-amber-200/25 skew-x-[-15deg] blur-[2px] animate-shine z-0 pointer-events-none"></div>
               </div>
               <button 
                 onClick={() => {
@@ -1338,6 +1934,15 @@ end
               </button>
             ))}
           </div>
+
+          <button
+            onClick={() => setIsModValidatorOpen(true)}
+            className="h-8 px-2.5 flex items-center gap-1.5 border border-cyan-500/40 bg-cyan-950/20 hover:border-cyan-400/70 hover:bg-cyan-500/15 text-cyan-300 hover:text-cyan-200 transition-all duration-200 rounded-sm text-[10px] font-mono font-bold uppercase tracking-wider cursor-pointer"
+            title={tr(lang, 'Global Mod Integrity Cross-Validator (v1.0)', 'Auditor Global de Integridad del Mod (v1.0)', 'Auditeur d\'Intégrité du Mod (v1.0)')}
+          >
+            <ShieldAlert className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden md:inline">{tr(lang, 'Audit Mod', 'Auditar Mod', 'Audit Mod')}</span>
+          </button>
 
           <button
             onClick={() => setIsInstallerHudOpen(true)}
@@ -1417,12 +2022,54 @@ end
             onSelectWorkspaceLua={loadLuaFromWorkspace}
             planets={planets}
           />
+        ) : sfxDoc !== null ? (
+          <SfxEditor
+            initialDoc={sfxDoc}
+            fileName={sfxFileName}
+            onClose={() => setSfxDoc(null)}
+            onError={setError}
+            workspaceFiles={workspaceFiles}
+            datRecords={datRecords}
+            onSelectWorkspaceFile={loadSfxFromWorkspace}
+          />
+        ) : techTreeDoc !== null ? (
+          <TechTreeEditor
+            initialDoc={techTreeDoc}
+            fileName={techTreeFileName}
+            onClose={() => setTechTreeDoc(null)}
+            onError={setError}
+            workspaceFiles={workspaceFiles}
+            datRecords={datRecords}
+            onSelectWorkspaceFile={loadTechTreeFromWorkspace}
+          />
+        ) : hardPointDoc !== null ? (
+          <HardPointEditor
+            initialDoc={hardPointDoc}
+            fileName={hardPointFileName}
+            onClose={() => setHardPointDoc(null)}
+            onError={setError}
+            workspaceFiles={workspaceFiles}
+            datRecords={datRecords}
+            onSelectWorkspaceFile={loadHardPointFromWorkspace}
+          />
         ) : unitDoc !== null ? (
           <UnitEditor
             initialDoc={unitDoc}
             fileName={unitFileName}
             onClose={() => setUnitDoc(null)}
             onError={setError}
+            workspaceFiles={workspaceFiles}
+            datRecords={datRecords}
+            hardPointsDoc={hardPointDoc}
+            onSelectWorkspaceUnit={loadUnitFromWorkspace}
+            onOpenHardPointEditor={(_hpName) => {
+              setUnitDoc(null);
+              if (!hardPointDoc) {
+                const parser = new DOMParser();
+                setHardPointDoc(parser.parseFromString(createSampleHardPointsXmlString(), 'application/xml'));
+                setHardPointFileName('HardPoints_Projectiles.xml');
+              }
+            }}
           />
         ) : rawXmlContent !== null ? (
           <XmlEditor
@@ -1487,18 +2134,117 @@ end
                          <span>{t.home.xmlMapTitle}</span>
                        </span>
                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-950/90 text-cyan-300 border border-cyan-700/50">
-                         v2.5
+                         v2.7
                        </span>
                        {activeTab === 'campaigns' && (
                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-950/90 text-emerald-300 border border-emerald-700/50">
-                           GC v3.1
+                           GC v3.3
                          </span>
                        )}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2.5 text-xs w-full md:w-auto overflow-x-auto justify-end">
+                <div className="flex items-center space-x-2 text-xs w-full md:w-auto overflow-x-visible justify-end relative">
+                   {/* XML Undo / Redo & Timeline Popover Controls */}
+                   <div className="flex items-center bg-slate-950/90 border border-cyan-800/50 rounded-sm p-0.5 space-x-0.5 relative">
+                     <button
+                       onClick={handleGalaxyUndo}
+                       disabled={!canUndoGalaxy}
+                       className="px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-300 hover:bg-cyan-950/70 disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1 rounded-sm cursor-pointer transition-colors"
+                       title={
+                         canUndoGalaxy
+                           ? `${tr(lang, 'Undo (Ctrl+Z):', 'Deshacer (Ctrl+Z):', 'Annuler (Ctrl+Z) :')} ${galaxyHistory[galaxyHistoryIndex]?.label || ''}`
+                           : tr(lang, 'Nothing to undo (Ctrl+Z)', 'Nada que deshacer (Ctrl+Z)', 'Rien à annuler (Ctrl+Z)')
+                       }
+                     >
+                       <Undo2 className="w-3.5 h-3.5" />
+                       <span className="hidden lg:inline">{tr(lang, 'Undo', 'Deshacer', 'Annuler')}</span>
+                     </button>
+                     <button
+                       onClick={handleGalaxyRedo}
+                       disabled={!canRedoGalaxy}
+                       className="px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-300 hover:bg-cyan-950/70 disabled:opacity-30 disabled:pointer-events-none flex items-center gap-1 rounded-sm cursor-pointer transition-colors"
+                       title={
+                         canRedoGalaxy
+                           ? `${tr(lang, 'Redo (Ctrl+Y):', 'Rehacer (Ctrl+Y):', 'Rétablir (Ctrl+Y) :')} ${galaxyHistory[galaxyHistoryIndex + 1]?.label || ''}`
+                           : tr(lang, 'Nothing to redo (Ctrl+Y)', 'Nada que rehacer (Ctrl+Y)', 'Rien à rétablir (Ctrl+Y)')
+                       }
+                     >
+                       <Redo2 className="w-3.5 h-3.5" />
+                       <span className="hidden lg:inline">{tr(lang, 'Redo', 'Rehacer', 'Rétablir')}</span>
+                     </button>
+                     <button
+                       onClick={() => setIsHistoryOpen(v => !v)}
+                       className={`px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 rounded-sm cursor-pointer transition-colors ${
+                         isHistoryOpen
+                           ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/50'
+                           : 'text-slate-300 hover:text-cyan-300 hover:bg-slate-900'
+                       }`}
+                       title={tr(lang, 'Open XML Action History Timeline', 'Abrir línea de tiempo del historial de nodos XML', 'Ouvrir l’historique des actions XML')}
+                     >
+                       <History className="w-3.5 h-3.5 text-cyan-400" />
+                       <span className="text-[9px] text-cyan-400">{Math.max(0, galaxyHistory.length - 1)}</span>
+                     </button>
+
+                     {isHistoryOpen && (
+                       <div className="absolute right-0 top-full mt-2 w-80 bg-slate-950/95 border border-cyan-500/50 rounded-sm shadow-[0_10px_35px_rgba(0,0,0,0.85)] backdrop-blur-md z-50 overflow-hidden font-mono">
+                         <div className="px-3 py-2 bg-slate-900 border-b border-cyan-900/60 flex items-center justify-between">
+                           <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-cyan-300">
+                             <History className="w-3.5 h-3.5 text-cyan-400" />
+                             <span>{tr(lang, 'XML Action History', 'Historial de Nodos XML', 'Historique XML')}</span>
+                           </div>
+                           <button
+                             onClick={() => setIsHistoryOpen(false)}
+                             className="text-slate-400 hover:text-cyan-300 text-xs px-1 cursor-pointer"
+                           >
+                             ✕
+                           </button>
+                         </div>
+                         <div className="max-h-64 overflow-y-auto custom-scrollbar divide-y divide-slate-900">
+                           {galaxyHistory.length === 0 ? (
+                             <div className="p-4 text-[10px] text-slate-500 text-center">
+                               {tr(lang, 'No actions recorded yet.', 'Aún no hay acciones registradas.', 'Aucune action enregistrée.')}
+                             </div>
+                           ) : (
+                             [...galaxyHistory].reverse().map((entry, revIdx) => {
+                               const actualIdx = galaxyHistory.length - 1 - revIdx;
+                               const isCurrent = actualIdx === galaxyHistoryIndex;
+                               const isFuture = actualIdx > galaxyHistoryIndex;
+                               return (
+                                 <button
+                                   key={entry.id}
+                                   onClick={() => handleJumpToGalaxyHistory(actualIdx)}
+                                   className={`w-full text-left px-3 py-2 flex items-center justify-between gap-2 text-[10px] transition-colors cursor-pointer ${
+                                     isCurrent
+                                       ? 'bg-cyan-950/70 text-cyan-200 border-l-2 border-cyan-400 font-bold'
+                                       : isFuture
+                                       ? 'bg-slate-950/50 text-slate-500 hover:bg-slate-900/60 hover:text-slate-300'
+                                       : 'bg-slate-950 text-slate-300 hover:bg-slate-900/80 hover:text-cyan-300'
+                                   }`}
+                                 >
+                                   <div className="truncate flex-1">
+                                     <span className="text-[8px] text-slate-500 mr-1.5">#{actualIdx}</span>
+                                     <span>{entry.label}</span>
+                                   </div>
+                                   {isCurrent && (
+                                     <span className="px-1.5 py-0.5 text-[8px] rounded bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 shrink-0">
+                                       {tr(lang, 'CURRENT', 'ACTUAL', 'ACTUEL')}
+                                     </span>
+                                   )}
+                                 </button>
+                               );
+                             })
+                           )}
+                         </div>
+                         <div className="px-3 py-1.5 bg-slate-900/80 border-t border-cyan-950 text-[8px] text-slate-400 flex items-center justify-between">
+                           <span>Ctrl+Z / Ctrl+Y</span>
+                           <span>{tr(lang, 'Click any state to restore XML', 'Clic en cualquier estado para restaurar XML', 'Cliquez pour restaurer l’état XML')}</span>
+                         </div>
+                       </div>
+                     )}
+                   </div>
+
                    <button 
                       onClick={() => setIsBulkEditOpen(true)}
                       className="px-3 py-1.5 border border-purple-500/50 hover:bg-purple-500/20 text-purple-400 text-[10px] font-mono font-bold tracking-widest uppercase transition-all flex items-center space-x-1.5 rounded-sm cursor-pointer"
@@ -1656,6 +2402,7 @@ end
                  mapClickTogglesCampaignPlanet={activeTab === 'campaigns' && mapClickTogglesCampaignPlanet}
                  onToggleCampaignPlanet={handleToggleCampaignPlanetFromMap}
                  onToggleMapClickMode={setMapClickTogglesCampaignPlanet}
+                 onQuickCreateRoute={handleQuickCreateRoute}
                />
 
                {activeTab === 'campaigns' ? (
@@ -1674,12 +2421,24 @@ end
                    hideExcludedInPreview={hideExcludedInPreview}
                    onToggleHideExcluded={setHideExcludedInPreview}
                    datRecords={datRecords}
+                   canUndo={canUndoGalaxy}
+                   canRedo={canRedoGalaxy}
+                   onUndo={handleGalaxyUndo}
+                   onRedo={handleGalaxyRedo}
+                   canRevertNode={canRevertSelectedCampaignNode}
+                   onRevertNode={handleRevertSelectedCampaignNode}
                  />
                ) : selectedPlanet || (!selectedRoute && activeTab === 'planets') ? (
                  <PlanetEditor 
                    planet={selectedPlanet} 
                    onUpdate={handleUpdatePlanet}
                    onDelete={() => selectedPlanet && handleDeletePlanet(selectedPlanet.id)}
+                   canUndo={canUndoGalaxy}
+                   canRedo={canRedoGalaxy}
+                   onUndo={handleGalaxyUndo}
+                   onRedo={handleGalaxyRedo}
+                   canRevertNode={canRevertSelectedPlanetNode}
+                   onRevertNode={handleRevertSelectedPlanetNode}
                  />
                ) : selectedRoute || (!selectedPlanet && activeTab === 'routes') ? (
                  <TradeRouteEditor 
@@ -1846,7 +2605,7 @@ end
                   {
                     id: 'xmlPlanets',
                     category: 'galaxy',
-                    version: '2.5',
+                    version: '2.7',
                     title: t.home.xmlMapTitle,
                     desc: t.home.xmlMapDesc ? t.home.xmlMapDesc.replace('Planets.xml', '<code class="text-cyan-400 font-mono font-bold">Planets.xml</code>') : '',
                     icon: <Globe className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />,
@@ -1888,13 +2647,13 @@ end
                   {
                     id: 'campaignsGc',
                     category: 'galaxy',
-                    version: '3.1',
+                    version: '3.3',
                     title: tr(lang, 'Galactic Conquest Editor (Campaigns.xml)', 'Editor de Campañas (Campaigns.xml)', 'Éditeur de Conquête Galactique (Campaigns.xml)'),
                     desc: tr(
                       lang,
-                      'Architect Galactic Conquests in <code class="text-emerald-400 font-mono font-bold">Campaigns.xml</code> directly on the interactive galaxy map: toggle active planets, <code class="text-emerald-400 font-mono">Starting_Forces</code>, credits, tech levels, and victory conditions.',
-                      'Diseña Conquistas Galácticas en <code class="text-emerald-400 font-mono font-bold">Campaigns.xml</code> sobre el mapa interactivo: selecciona planetas activos, <code class="text-emerald-400 font-mono">Starting_Forces</code>, créditos, niveles tecnológicos y condiciones de victoria.',
-                      'Concevez des Conquêtes Galactiques dans <code class="text-emerald-400 font-mono font-bold">Campaigns.xml</code> sur la carte galactique interactive : activez les planètes, <code class="text-emerald-400 font-mono">Starting_Forces</code>, crédits, niveaux technologiques et conditions de victoire.'
+                      'Architect Galactic Conquests in <code class="text-emerald-400 font-mono font-bold">Campaigns.xml</code> directly on the interactive galaxy map: toggle active planets, <code class="text-emerald-400 font-mono">Starting_Forces</code>, live faction income, and victory conditions.',
+                      'Diseña Conquistas Galácticas en <code class="text-emerald-400 font-mono font-bold">Campaigns.xml</code> sobre el mapa interactivo: selecciona planetas activos, <code class="text-emerald-400 font-mono">Starting_Forces</code>, ingresos por facción en vivo y condiciones de victoria.',
+                      'Concevez des Conquêtes Galactiques dans <code class="text-emerald-400 font-mono font-bold">Campaigns.xml</code> sur la carte galactique interactive : activez les planètes, <code class="text-emerald-400 font-mono">Starting_Forces</code>, revenus par faction et conditions de victoire.'
                     ),
                     icon: <Shield className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />,
                     accentColor: 'border-emerald-900/40 hover:border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.02)] hover:shadow-[0_0_25px_rgba(16,185,129,0.08)]',
@@ -1942,7 +2701,7 @@ end
                   {
                     id: 'story',
                     category: 'galaxy',
-                    version: '2.1',
+                    version: '2.2',
                     title: t.home.storyTitle,
                     desc: t.home.storyDesc,
                     icon: <BookOpen className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />,
@@ -1993,25 +2752,30 @@ end
                   {
                     id: 'unitBalance',
                     category: 'galaxy',
-                    version: '1.1',
-                    title: tr(lang, 'Unit Balance Editor', 'Editor de Balance de Unidades', 'Éditeur d\'Équilibrage d\'Unités'),
+                    version: '1.4',
+                    title: tr(lang, 'Alamo Unit & Roster Editor', 'Editor de Unidades y Flotas', 'Éditeur d\'Unités & Flottes'),
                     desc: tr(
                       lang,
-                      'Visualize and edit stats for <code class="text-emerald-400 font-mono">SpaceUnits</code>, <code class="text-emerald-400 font-mono">GroundInfantry</code>, and <code class="text-emerald-400 font-mono">Squadrons</code>.',
-                      'Visualiza y edita estadísticas para <code class="text-emerald-400 font-mono">SpaceUnits</code>, <code class="text-emerald-400 font-mono">GroundInfantry</code> y <code class="text-emerald-400 font-mono">Squadrons</code> de manera ágil.',
-                      'Visualisez et modifiez les statistiques pour <code class="text-emerald-400 font-mono">SpaceUnits</code>, <code class="text-emerald-400 font-mono">GroundInfantry</code> et <code class="text-emerald-400 font-mono">Squadrons</code> rapidement.'
+                      'Full-featured editor for <code class="text-emerald-400 font-mono">SpaceUnits</code>, <code class="text-emerald-400 font-mono">GroundUnits</code>, <code class="text-emerald-400 font-mono">Squadrons</code>, and <code class="text-emerald-400 font-mono">Heroes</code> with Versus 1v1 TTK Duel Simulator, spreadsheet, and batch % scaling.',
+                      'Editor completo de <code class="text-emerald-400 font-mono">SpaceUnits</code>, <code class="text-emerald-400 font-mono">GroundUnits</code>, <code class="text-emerald-400 font-mono">Squadrons</code> y <code class="text-emerald-400 font-mono">Héroes</code> con Simulador de Duelo TTK 1v1 Versus, tabla de balance y escalado masivo (%).',
+                      'Éditeur complet pour <code class="text-emerald-400 font-mono">SpaceUnits</code>, <code class="text-emerald-400 font-mono">GroundUnits</code> et <code class="text-emerald-400 font-mono">Squadrons</code> avec Simulateur de Duel TTK 1v1 Versus et tableau comparatif.'
                     ),
                     icon: <Database className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />,
                     accentColor: 'border-emerald-950/30 hover:border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.01)] hover:shadow-[0_0_25px_rgba(16,185,129,0.06)]',
                     accentBadge: 'text-emerald-400 bg-emerald-950/60 border-emerald-800/40',
-                    badgeLabel: tr(lang, 'UNIT STAT BALANCE', 'UNIDADES Y BALANCE', 'ÉQUILIBRAGE UNITÉS'),
-                    detected: workspaceFiles.some(f => f.name.toLowerCase() === 'spaceunits.xml' || f.name.toLowerCase() === 'groundinfantry.xml' || f.name.toLowerCase() === 'units.xml'),
+                    badgeLabel: tr(lang, 'UNIT & ROSTER EDITOR', 'EDITOR DE UNIDADES', 'ÉDITEUR D\'UNITÉS'),
+                    detected: workspaceFiles.some(f => f.name.toLowerCase().endsWith('.xml') && /unit|squadron|vehicle|infantry|hero|company|starbase|structure|corvette|frigate|capital|fighter/i.test(f.name)),
                     renderAction: () => {
-                      const unitFiles = workspaceFiles.filter(f => f.name.toLowerCase().endsWith('.xml'));
-                      const hasUnitFile = workspaceFiles.some(f => f.name.toLowerCase() === 'spaceunits.xml' || f.name.toLowerCase() === 'groundinfantry.xml' || f.name.toLowerCase() === 'units.xml');
+                      const unitFiles = workspaceFiles
+                        .filter(f => f.name.toLowerCase().endsWith('.xml'))
+                        .sort((a, b) => {
+                          const aScore = /unit|squadron|vehicle|infantry|hero|company|starbase|structure|corvette|frigate|capital|fighter/i.test(a.name) ? 0 : 1;
+                          const bScore = /unit|squadron|vehicle|infantry|hero|company|starbase|structure|corvette|frigate|capital|fighter/i.test(b.name) ? 0 : 1;
+                          return aScore - bScore || a.name.localeCompare(b.name);
+                        });
                       return (
-                        <div className="space-y-2 mt-auto">
-                          {hasUnitFile ? (
+                        <div className="space-y-1.5 mt-auto">
+                          {unitFiles.length > 0 ? (
                             <select 
                                onChange={(e) => {
                                   if (e.target.value) {
@@ -2035,9 +2799,225 @@ end
                               <span>{tr(lang, 'Load Units XML', 'Cargar XML de Unidades', 'Charger XML d\'Unités')}</span>
                             </button>
                           )}
+                          <button
+                            onClick={() => {
+                              const parser = new DOMParser();
+                              const sampleDoc = parser.parseFromString(createSampleUnitsXmlString(), 'application/xml');
+                              setUnitDoc(sampleDoc);
+                              setUnitFileName('SpaceUnitsCapital.xml');
+                            }}
+                            className="w-full flex items-center justify-center space-x-2 border border-emerald-800/50 hover:bg-emerald-900/20 text-emerald-400 hover:text-emerald-300 font-bold uppercase tracking-widest py-1.5 text-[9px] transition-colors cursor-pointer rounded-sm font-sans"
+                          >
+                            <span>{tr(lang, 'Open Sample Roster XML', 'Crear / Abrir Plantilla de Unidades', 'Ouvrir Modèle d\'Unités')}</span>
+                          </button>
                         </div>
                       );
                     }
+                  },
+                  {
+                    id: 'hardPointsEditor',
+                    category: 'galaxy',
+                    version: '1.1',
+                    title: tr(lang, 'HardPoints & Projectiles XML Editor', 'Editor de HardPoints y Proyectiles XML', 'Éditeur HardPoints & Projectiles XML'),
+                    desc: tr(
+                      lang,
+                      'Configure ship/station subsystems (<code class="text-amber-400 font-mono">HardPoints.xml</code>) and weapons (<code class="text-amber-400 font-mono">Projectiles.xml</code>) with 2D firing cone radar, RGBA laser bolt color picker, and live Target TTK Simulator.',
+                      'Configura subsistemas navales (<code class="text-amber-400 font-mono">HardPoints.xml</code>) y munición (<code class="text-amber-400 font-mono">Projectiles.xml</code>) con radar 2D de arcos de fuego, selector de color láser RGB y simulador TTK en vivo.',
+                      'Configurez les sous-systèmes (<code class="text-amber-400 font-mono">HardPoints.xml</code>) et projectiles (<code class="text-amber-400 font-mono">Projectiles.xml</code>) avec radar de cône de tir 2D et simulateur TTK.'
+                    ),
+                    icon: <Flame className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />,
+                    accentColor: 'border-amber-900/40 hover:border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.02)] hover:shadow-[0_0_25px_rgba(245,158,11,0.08)]',
+                    accentBadge: 'text-amber-300 bg-amber-950/60 border-amber-700/50',
+                    badgeLabel: tr(lang, 'WEAPONS & SUBSYSTEMS', 'ARMAMENTO Y HARDPOINTS', 'ARMEMENT & HARDPOINTS'),
+                    detected: workspaceFiles.some(f => f.name.toLowerCase().endsWith('.xml') && /hardpoint|projectile|weapon/i.test(f.name)),
+                    renderAction: () => {
+                      const hpFiles = workspaceFiles.filter(f => f.name.toLowerCase().endsWith('.xml') && /hardpoint|projectile|weapon/i.test(f.name));
+                      return (
+                        <div className="space-y-1.5 mt-auto">
+                          {hpFiles.length > 0 ? (
+                            <select
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  loadHardPointFromWorkspace(e.target.value);
+                                  e.target.value = '';
+                                }
+                              }}
+                              className="w-full bg-slate-950 border border-amber-800/50 text-amber-300 font-mono text-[9px] uppercase tracking-widest py-2 px-1 rounded-sm cursor-pointer focus:outline-none focus:border-amber-500"
+                            >
+                              <option value="">{t.home.selectFile}</option>
+                              {hpFiles.map((f, i) => (
+                                <option key={i} value={f.webkitRelativePath || f.name}>{f.name}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <button
+                              onClick={() => hardPointFileInputRef.current?.click()}
+                              className="w-full flex items-center justify-center space-x-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-[10px] transition-colors cursor-pointer rounded-sm font-sans"
+                            >
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>{tr(lang, 'Load HardPoints / Projectiles XML', 'Cargar XML de HardPoints / Proyectiles', 'Charger XML HardPoints')}</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              const parser = new DOMParser();
+                              const sampleDoc = parser.parseFromString(createSampleHardPointsXmlString(), 'application/xml');
+                              setHardPointDoc(sampleDoc);
+                              setHardPointFileName('HardPoints_Projectiles.xml');
+                            }}
+                            className="w-full flex items-center justify-center space-x-2 border border-amber-800/60 hover:bg-amber-950/30 text-amber-400 hover:text-amber-300 font-bold uppercase tracking-widest py-1.5 text-[9px] transition-colors cursor-pointer font-mono rounded-sm"
+                          >
+                            <span>{tr(lang, 'Open Sample Weapons XML', 'Abrir Plantilla de Armamento XML', 'Ouvrir Modèle Armement XML')}</span>
+                          </button>
+                        </div>
+                      );
+                    }
+                  },
+                  {
+                    id: 'techTreeFactions',
+                    category: 'galaxy',
+                    version: '1.0',
+                    title: tr(lang, 'Tech Tree & Factions XML Architect', 'Árbol Tecnológico y Facciones XML', 'Arbre Technologique & Factions XML'),
+                    desc: tr(
+                      lang,
+                      'Visual progression board (<code class="text-cyan-400 font-mono">Tech 0</code> to <code class="text-cyan-400 font-mono">Tech 5</code>) by faction with Starbase & structure dependency tags and full <code class="text-cyan-400 font-mono">Factions.xml</code> RGBA color & cap inspector.',
+                      'Tablero visual de progresión tecnológica (<code class="text-cyan-400 font-mono">Tech 0</code> a <code class="text-cyan-400 font-mono">Tech 5</code>) por facción con requisitos de estación/estructuras e inspector completo de <code class="text-cyan-400 font-mono">Factions.xml</code>.',
+                      'Tableau de progression technologique (<code class="text-cyan-400 font-mono">Tech 0</code> à <code class="text-cyan-400 font-mono">Tech 5</code>) par faction et inspecteur <code class="text-cyan-400 font-mono">Factions.xml</code>.'
+                    ),
+                    icon: <GitBranch className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />,
+                    accentColor: 'border-cyan-900/40 hover:border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.02)] hover:shadow-[0_0_25px_rgba(6,182,212,0.08)]',
+                    accentBadge: 'text-cyan-300 bg-cyan-950/60 border-cyan-700/50',
+                    badgeLabel: tr(lang, 'TECH TREE & FACTIONS', 'ÁRBOL TECH Y FACCIONES', 'ARBRE TECH & FACTIONS'),
+                    detected: workspaceFiles.some(f => f.name.toLowerCase().endsWith('.xml') && /faction|unit|squadron|starbase/i.test(f.name)),
+                    renderAction: () => {
+                      const ttFiles = workspaceFiles.filter(f => f.name.toLowerCase().endsWith('.xml') && /faction|unit|squadron|starbase|company/i.test(f.name));
+                      return (
+                        <div className="space-y-1.5 mt-auto">
+                          {ttFiles.length > 0 ? (
+                            <select
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  loadTechTreeFromWorkspace(e.target.value);
+                                  e.target.value = '';
+                                }
+                              }}
+                              className="w-full bg-slate-950 border border-cyan-800/50 text-cyan-300 font-mono text-[9px] uppercase tracking-widest py-2 px-1 rounded-sm cursor-pointer focus:outline-none focus:border-cyan-500"
+                            >
+                              <option value="">{t.home.selectFile}</option>
+                              {ttFiles.map((f, i) => (
+                                <option key={i} value={f.webkitRelativePath || f.name}>{f.name}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <button
+                              onClick={() => techTreeFileInputRef.current?.click()}
+                              className="w-full flex items-center justify-center space-x-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-[10px] transition-colors cursor-pointer rounded-sm font-sans"
+                            >
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>{tr(lang, 'Load Factions / Units XML', 'Cargar XML de Facciones / Unidades', 'Charger XML Factions / Unités')}</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              const parser = new DOMParser();
+                              const sampleDoc = parser.parseFromString(createSampleTechTreeAndFactionsXmlString(), 'application/xml');
+                              setTechTreeDoc(sampleDoc);
+                              setTechTreeFileName('TechTree_Factions.xml');
+                            }}
+                            className="w-full flex items-center justify-center space-x-2 border border-cyan-800/60 hover:bg-cyan-950/30 text-cyan-400 hover:text-cyan-300 font-bold uppercase tracking-widest py-1.5 text-[9px] transition-colors cursor-pointer font-mono rounded-sm"
+                          >
+                            <span>{tr(lang, 'Open Sample Tech Tree & Factions', 'Abrir Plantilla Árbol Tech y Facciones', 'Ouvrir Modèle Arbre Tech')}</span>
+                          </button>
+                        </div>
+                      );
+                    }
+                  },
+                  {
+                    id: 'sfxEventsEditor',
+                    category: 'localization',
+                    version: '1.0',
+                    title: tr(lang, 'Audio & SFXEvents.xml Studio', 'Editor de Audio SFXEvents.xml', 'Studio Audio & SFXEvents.xml'),
+                    desc: tr(
+                      lang,
+                      'Configure <code class="text-purple-400 font-mono">SFXEvents.xml</code> sound effects, weapon fire, and unit voiceovers with dynamic volume/pitch range sliders, 3D attenuation distances, and Web Audio synthesizer preview.',
+                      'Configura efectos de sonido, disparos láser y voces de unidad en <code class="text-purple-400 font-mono">SFXEvents.xml</code> con rangos dinámicos de volumen/tono, atenuación 3D y sintetizador acústico en vivo.',
+                      'Configurez <code class="text-purple-400 font-mono">SFXEvents.xml</code> (tirs, moteurs, voix) avec plages de volume/pitch, atténuation 3D et prévisualisation Web Audio.'
+                    ),
+                    icon: <Volume2 className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />,
+                    accentColor: 'border-purple-900/40 hover:border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.02)] hover:shadow-[0_0_25px_rgba(168,85,247,0.08)]',
+                    accentBadge: 'text-purple-300 bg-purple-950/60 border-purple-700/50',
+                    badgeLabel: tr(lang, 'AUDIO & SFXEVENTS', 'AUDIO Y SFXEVENTS', 'AUDIO & SFXEVENTS'),
+                    detected: workspaceFiles.some(f => f.name.toLowerCase().endsWith('.xml') && /sfx|sound|audio|music|speech/i.test(f.name)),
+                    renderAction: () => {
+                      const sfxFiles = workspaceFiles.filter(f => f.name.toLowerCase().endsWith('.xml') && /sfx|sound|audio|music|speech/i.test(f.name));
+                      return (
+                        <div className="space-y-1.5 mt-auto">
+                          {sfxFiles.length > 0 ? (
+                            <select
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  loadSfxFromWorkspace(e.target.value);
+                                  e.target.value = '';
+                                }
+                              }}
+                              className="w-full bg-slate-950 border border-purple-800/50 text-purple-300 font-mono text-[9px] uppercase tracking-widest py-2 px-1 rounded-sm cursor-pointer focus:outline-none focus:border-purple-500"
+                            >
+                              <option value="">{t.home.selectFile}</option>
+                              {sfxFiles.map((f, i) => (
+                                <option key={i} value={f.webkitRelativePath || f.name}>{f.name}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <button
+                              onClick={() => sfxFileInputRef.current?.click()}
+                              className="w-full flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-[10px] transition-colors cursor-pointer rounded-sm font-sans"
+                            >
+                              <Upload className="w-3.5 h-3.5" />
+                              <span>{tr(lang, 'Load SFXEvents.xml', 'Cargar SFXEvents.xml', 'Charger SFXEvents.xml')}</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              const parser = new DOMParser();
+                              const sampleDoc = parser.parseFromString(createSampleSfxEventsXmlString(), 'application/xml');
+                              setSfxDoc(sampleDoc);
+                              setSfxFileName('SFXEvents.xml');
+                            }}
+                            className="w-full flex items-center justify-center space-x-2 border border-purple-800/60 hover:bg-purple-950/30 text-purple-400 hover:text-purple-300 font-bold uppercase tracking-widest py-1.5 text-[9px] transition-colors cursor-pointer font-mono rounded-sm"
+                          >
+                            <span>{tr(lang, 'Open Sample SFXEvents.xml', 'Abrir Plantilla SFXEvents.xml', 'Ouvrir Modèle SFXEvents.xml')}</span>
+                          </button>
+                        </div>
+                      );
+                    }
+                  },
+                  {
+                    id: 'modValidator',
+                    category: 'raw_code',
+                    version: '1.0',
+                    title: tr(lang, 'Global Mod Integrity Cross-Validator', 'Auditor Global de Integridad del Mod', 'Auditeur Global d\'Intégrité du Mod'),
+                    desc: tr(
+                      lang,
+                      'Cross-scans your loaded XML files against <code class="text-cyan-400 font-mono">.DAT</code> string tables, <code class="text-cyan-400 font-mono">.MTD</code> icon atlases, and Galactic Conquest planet topology, with 1-click missing key injection.',
+                      'Escanea de forma cruzada tus archivos XML frente a tablas de texto <code class="text-cyan-400 font-mono">.DAT</code>, atlas de iconos <code class="text-cyan-400 font-mono">.MTD</code> y rutas galácticas, con inyección automática de claves faltantes.',
+                      'Vérifie la cohérence croisée entre vos fichiers XML, les textes <code class="text-cyan-400 font-mono">.DAT</code>, les icônes <code class="text-cyan-400 font-mono">.MTD</code> et la topologie galactique.'
+                    ),
+                    icon: <ShieldAlert className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />,
+                    accentColor: 'border-cyan-900/40 hover:border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.02)] hover:shadow-[0_0_25px_rgba(6,182,212,0.08)]',
+                    accentBadge: 'text-cyan-300 bg-cyan-950/60 border-cyan-700/50',
+                    badgeLabel: tr(lang, 'MOD DIAGNOSTICS', 'AUDITORÍA DEL MOD', 'DIAGNOSTIC DU MOD'),
+                    detected: workspaceFiles.length > 0 || Boolean(xmlDoc || unitDoc || datRecords || mtdIcons),
+                    renderAction: () => (
+                      <div className="space-y-1.5 mt-auto">
+                        <button
+                          onClick={() => setIsModValidatorOpen(true)}
+                          className="w-full flex items-center justify-center space-x-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold uppercase tracking-widest py-2.5 text-[10px] transition-colors cursor-pointer rounded-sm font-sans"
+                        >
+                          <ShieldAlert className="w-3.5 h-3.5" />
+                          <span>{tr(lang, 'Launch Integrity Audit', 'Ejecutar Auditoría del Mod', 'Lancer l\'Audit du Mod')}</span>
+                        </button>
+                      </div>
+                    )
                   },
                   {
                     id: 'dat',
@@ -2422,6 +3402,36 @@ end
         onClose={() => setIsInstallerHudOpen(false)}
       />
 
+      <ModValidatorModal
+        isOpen={isModValidatorOpen}
+        onClose={() => setIsModValidatorOpen(false)}
+        planets={planets}
+        tradeRoutes={tradeRoutes}
+        campaigns={campaigns}
+        storyEvents={storyEvents}
+        unitDoc={unitDoc}
+        hardPointDoc={hardPointDoc}
+        datRecords={datRecords}
+        mtdIcons={mtdIcons}
+        workspaceFiles={workspaceFiles}
+        onAddDatRecord={(key, value) => {
+          const newRec: DatRecord = {
+            id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
+            key: key.trim(),
+            value
+          };
+          setDatRecords(prev => (prev ? [...prev, newRec] : [newRec]));
+        }}
+        onBatchAddDatRecords={(items) => {
+          const added: DatRecord[] = items.map(it => ({
+            id: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`,
+            key: it.key.trim(),
+            value: it.value
+          }));
+          setDatRecords(prev => (prev ? [...prev, ...added] : added));
+        }}
+      />
+
       <UpdaterUI />
 
       <ErrorModal 
@@ -2437,6 +3447,9 @@ end
       <input type="file" ref={storyFileInputRef} className="hidden" accept=".xml" onChange={handleStoryUpload} />
       <input type="file" ref={xmlFileInputRef} className="hidden" accept=".xml" onChange={handleXmlUpload} />
       <input type="file" ref={unitFileInputRef} className="hidden" accept=".xml" onChange={handleUnitUpload} />
+      <input type="file" ref={hardPointFileInputRef} className="hidden" accept=".xml" onChange={handleHardPointUpload} />
+      <input type="file" ref={techTreeFileInputRef} className="hidden" accept=".xml" onChange={handleTechTreeUpload} />
+      <input type="file" ref={sfxFileInputRef} className="hidden" accept=".xml" onChange={handleSfxUpload} />
       <input type="file" ref={luaFileInputRef} className="hidden" accept=".lua" onChange={handleLuaUpload} />
       <input type="file" ref={dialogFileInputRef} className="hidden" accept=".txt" onChange={handleDialogUpload} />
       <input type="file" ref={folderInputRef} className="hidden" 
